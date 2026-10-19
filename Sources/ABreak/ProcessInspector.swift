@@ -25,10 +25,6 @@ enum ProcessInspector {
         }
     }
 
-    static func isAlive(_ pid: pid_t) -> Bool {
-        kill(pid, 0) == 0 || errno == EPERM
-    }
-
     /// Counts established TCP connections and open UDP sockets.
     static func sockets(of pid: pid_t) -> (tcpEstablished: Int, udp: Int) {
         let stride = MemoryLayout<proc_fdinfo>.stride

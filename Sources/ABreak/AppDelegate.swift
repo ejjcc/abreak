@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.button?.imagePosition = .imageLeading
         statusItem.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         let menu = NSMenu()
+        menu.autoenablesItems = false
         menu.delegate = self
         statusItem.menu = menu
 
@@ -45,9 +46,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         Log.write("launched")
         render()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+        // Common modes keep the timer running while the status menu is open.
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     // MARK: - Loop
@@ -163,7 +167,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
 
-        menu.addItem(item("立即休息") { $0.act { $0.startBreak() } })
+        let breakNow = item("立即休息") { $0.act { $0.startBreak() } }
+        breakNow.isEnabled = !scheduler.isPaused
+        menu.addItem(breakNow)
         menu.addItem(item("重新计时") { $0.act { $0.resetWork() } })
 
         let pause = NSMenuItem(title: "暂停", action: nil, keyEquivalent: "")

@@ -132,3 +132,19 @@ private extension Scheduler {
     r.reset()
     #expect(r.elapsed == 0)
 }
+
+@Test func startBreakIsIgnoredWhilePaused() {
+    var s = Scheduler(config: config())
+    s.run(1, reasons: ["manual"])
+    s.startBreak()
+    #expect(s.phase == .working)
+}
+
+@Test func loweringPreBreakWarningLeavesPreBreak() {
+    var s = Scheduler(config: config())
+    s.run(96)
+    #expect(s.phase == .preBreak)
+    s.config.preBreakWarning = 0
+    s.run(1)
+    #expect(s.phase == .working)
+}

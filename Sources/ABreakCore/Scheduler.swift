@@ -75,8 +75,8 @@ public struct Scheduler: Sendable {
             workRemaining -= dt
             if workRemaining <= 0 {
                 startBreak()
-            } else if workRemaining <= config.preBreakWarning {
-                phase = .preBreak
+            } else {
+                phase = workRemaining <= config.preBreakWarning ? .preBreak : .working
             }
         case .onBreak:
             breakRemaining -= dt
@@ -87,7 +87,9 @@ public struct Scheduler: Sendable {
         }
     }
 
+    /// No-op while paused: a smart pause would cancel the break on the next tick anyway.
     public mutating func startBreak() {
+        guard !isPaused else { return }
         let long = nextBreakIsLong
         phase = .onBreak(long: long)
         breakRemaining = long ? config.longBreak : config.shortBreak

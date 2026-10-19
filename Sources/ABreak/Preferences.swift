@@ -46,7 +46,7 @@ enum Pref {
             micIgnoredProcesses: "",
             pauseOnVideo: true,
             videoIgnoredProcesses: "caffeinate, Amphetamine, KeepingYouAwake, Lungo",
-            pauseOnFullscreen: false,
+            pauseOnFullscreen: true,
             pauseApps: "",
             playSounds: true,
             allowSkip: true,

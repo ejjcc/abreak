@@ -27,7 +27,7 @@ struct SettingsView: View {
     @AppStorage(Pref.micIgnoredProcesses) private var micIgnoredProcesses = ""
     @AppStorage(Pref.pauseOnVideo) private var pauseOnVideo = true
     @AppStorage(Pref.videoIgnoredProcesses) private var videoIgnoredProcesses = ""
-    @AppStorage(Pref.pauseOnFullscreen) private var pauseOnFullscreen = false
+    @AppStorage(Pref.pauseOnFullscreen) private var pauseOnFullscreen = true
     @AppStorage(Pref.pauseApps) private var pauseApps = ""
 
     @AppStorage(Pref.playSounds) private var playSounds = true

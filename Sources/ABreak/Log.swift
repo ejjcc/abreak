@@ -1,9 +1,9 @@
 import Foundation
 
-/// Appends state transitions to ~/Library/Logs/Stretch.log, so detection can be audited after the fact.
+/// Appends state transitions to ~/Library/Logs/ABreak.log, so detection can be audited after the fact.
 enum Log {
     private static let url = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Logs/Stretch.log")
+        .appendingPathComponent("Library/Logs/ABreak.log")
 
     static func write(_ message: String) {
         let line = "\(Date().formatted(.iso8601)) \(message)\n"

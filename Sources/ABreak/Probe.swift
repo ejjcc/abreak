@@ -1,7 +1,7 @@
 import AppKit
 import CoreGraphics
 
-/// `Stretch --probe`: prints raw detector signals every 2 seconds, for tuning detection thresholds.
+/// `ABreak --probe`: prints raw detector signals every 2 seconds, for tuning detection thresholds.
 enum Probe {
     @MainActor
     static func run() {

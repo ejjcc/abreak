@@ -2,19 +2,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "Stretch",
+    name: "ABreak",
     platforms: [.macOS("14.2")],
     targets: [
-        .target(name: "StretchCore"),
+        .target(name: "ABreakCore"),
         .executableTarget(
-            name: "Stretch",
-            dependencies: ["StretchCore"],
+            name: "ABreak",
+            dependencies: ["ABreakCore"],
             linkerSettings: [
                 .linkedFramework("CoreAudio"),
                 .linkedFramework("CoreMediaIO"),
                 .linkedFramework("IOKit"),
             ]
         ),
-        .testTarget(name: "StretchCoreTests", dependencies: ["StretchCore"]),
+        .testTarget(name: "ABreakCoreTests", dependencies: ["ABreakCore"]),
     ]
 )

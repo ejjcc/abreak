@@ -1,5 +1,5 @@
 import Foundation
-import StretchCore
+import ABreakCore
 
 /// Detects that this Mac is being remotely viewed/controlled by watching the host process
 /// of a remote-desktop tool (UURemote: `UURemoteServer`). An idle host keeps one signaling

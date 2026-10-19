@@ -1,12 +1,14 @@
-# Stretch
+# ABreak
 
 macOS 菜单栏休息提醒（LookAway 的最小复刻），重点是**远程控制时自动免打扰**。
+
+默认配置与作者的 LookAway 设置一致：每 45 分钟休息 20 秒，会议和视频播放时暂停，每 20 分钟坐姿提醒。
 
 ## 构建
 
 ```sh
 scripts/test.sh                 # core unit tests
-scripts/build-app.sh            # -> build/Stretch.app
+scripts/build-app.sh            # -> build/ABreak.app
 scripts/build-app.sh --install  # copy to /Applications and launch
 ```
 
@@ -23,7 +25,7 @@ scripts/build-app.sh --install  # copy to /Applications and launch
 ## 调试
 
 ```sh
-build/Stretch.app/Contents/MacOS/Stretch --probe   # print raw detector signals every 2s
+build/ABreak.app/Contents/MacOS/ABreak --probe   # print raw detector signals every 2s
 ```
 
-状态切换记录在 `~/Library/Logs/Stretch.log`。
+状态切换记录在 `~/Library/Logs/ABreak.log`。

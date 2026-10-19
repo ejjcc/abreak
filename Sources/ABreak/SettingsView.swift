@@ -10,7 +10,7 @@ final class StatusModel: ObservableObject {
 struct SettingsView: View {
     @ObservedObject var status: StatusModel
 
-    @AppStorage(Pref.workMinutes) private var workMinutes = 20.0
+    @AppStorage(Pref.workMinutes) private var workMinutes = 45.0
     @AppStorage(Pref.breakSeconds) private var breakSeconds = 20.0
     @AppStorage(Pref.longBreakMinutes) private var longBreakMinutes = 5.0
     @AppStorage(Pref.longBreakEvery) private var longBreakEvery = 4
@@ -32,6 +32,8 @@ struct SettingsView: View {
 
     @AppStorage(Pref.playSounds) private var playSounds = true
     @AppStorage(Pref.allowSkip) private var allowSkip = true
+    @AppStorage(Pref.postureEnabled) private var postureEnabled = true
+    @AppStorage(Pref.postureMinutes) private var postureMinutes = 20.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -45,6 +47,12 @@ struct SettingsView: View {
                 Stepper("提前 \(Int(preBreakSeconds)) 秒提醒", value: $preBreakSeconds, in: 0...60, step: 5)
                 Toggle("允许跳过休息", isOn: $allowSkip)
                 Toggle("休息结束时播放提示音", isOn: $playSounds)
+            }
+
+            Section("坐姿提醒") {
+                Toggle("定时提醒调整坐姿", isOn: $postureEnabled)
+                Stepper("每 \(Int(postureMinutes)) 分钟一次", value: $postureMinutes, in: 5...120, step: 5)
+                    .disabled(!postureEnabled)
             }
 
             Section("离开检测") {

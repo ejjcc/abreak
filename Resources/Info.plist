@@ -5,11 +5,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_CN</string>
 	<key>CFBundleExecutable</key>
-	<string>Stretch</string>
+	<string>ABreak</string>
 	<key>CFBundleIdentifier</key>
-	<string>cc.ejj.stretch</string>
+	<string>cc.ejj.abreak</string>
 	<key>CFBundleName</key>
-	<string>Stretch</string>
+	<string>ABreak</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

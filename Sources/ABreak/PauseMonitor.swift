@@ -1,5 +1,5 @@
 import AppKit
-import StretchCore
+import ABreakCore
 
 /// Aggregates every smart-pause source into a list of human-readable reasons.
 @MainActor

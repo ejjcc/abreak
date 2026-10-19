@@ -1,5 +1,5 @@
 import Foundation
-import StretchCore
+import ABreakCore
 
 enum Pref {
     static let workMinutes = "workMinutes"
@@ -24,10 +24,13 @@ enum Pref {
 
     static let playSounds = "playSounds"
     static let allowSkip = "allowSkip"
+    static let postureEnabled = "postureEnabled"
+    static let postureMinutes = "postureMinutes"
 
+    /// Defaults mirror the owner's LookAway setup: 45-min focus, pause on meetings and video, posture every 20 min.
     static func register() {
         UserDefaults.standard.register(defaults: [
-            workMinutes: 20,
+            workMinutes: 45,
             breakSeconds: 20,
             longBreakMinutes: 5,
             longBreakEvery: 4,
@@ -47,6 +50,8 @@ enum Pref {
             pauseApps: "",
             playSounds: true,
             allowSkip: true,
+            postureEnabled: true,
+            postureMinutes: 20,
         ])
     }
 

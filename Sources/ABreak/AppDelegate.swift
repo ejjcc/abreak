@@ -1,5 +1,5 @@
 import AppKit
-import StretchCore
+import ABreakCore
 import SwiftUI
 
 @MainActor
@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let monitor = PauseMonitor()
     private let overlay = BreakOverlay()
     private let preBreak = PreBreakPanel()
+    private let toast = Toast()
+    private var posture = IntervalReminder(interval: 0)
     private let status = StatusModel()
     private var statusItem: NSStatusItem!
     private var settingsWindow: NSWindow?
@@ -65,6 +67,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Log.write("pause reasons: \(reasons.isEmpty ? "none" : reasons.joined(separator: "; ")) | remote: \(remoteSummary())")
         }
         transition(from: before)
+
+        posture.interval = Pref.bool(Pref.postureEnabled) ? max(5, Pref.double(Pref.postureMinutes)) * 60 : 0
+        let working = scheduler.phase == .working && !scheduler.isPaused && !scheduler.isIdle
+        if posture.tick(dt, active: working) {
+            toast.show(symbol: "figure.stand", text: "坐直，放松肩膀")
+            Log.write("posture reminder")
+        }
     }
 
     private func act(_ change: (inout Scheduler) -> Void) {
@@ -77,8 +86,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if before.phase != scheduler.phase {
             Log.write("phase: \(before.phase) -> \(scheduler.phase)")
             if case .onBreak = before.phase, scheduler.phase == .working,
-               scheduler.completedBreaks > before.completedBreaks, Pref.bool(Pref.playSounds) {
-                NSSound(named: "Glass")?.play()
+               scheduler.completedBreaks > before.completedBreaks {
+                posture.reset()
+                if Pref.bool(Pref.playSounds) { NSSound(named: "Glass")?.play() }
             }
         }
 
@@ -122,7 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             symbol = scheduler.isIdle ? "moon.zzz" : "eye"
             title = " " + clock(scheduler.workRemaining)
         }
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Stretch")
+        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "ABreak")
         button.title = title
         button.toolTip = scheduler.isPaused ? scheduler.pauseReasons.joined(separator: "\n") : nil
 
@@ -174,7 +184,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(item("设置…", key: ",") { $0.openSettings() })
         menu.addItem(item("打开日志") { _ in
-            NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Stretch.log"))
+            NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/ABreak.log"))
         })
         menu.addItem(item("退出", key: "q") { _ in NSApp.terminate(nil) })
     }
@@ -187,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func openSettings() {
         if settingsWindow == nil {
             let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(status: status)))
-            w.title = "Stretch 设置"
+            w.title = "ABreak 设置"
             w.styleMask = [.titled, .closable]
             w.isReleasedWhenClosed = false
             w.center()

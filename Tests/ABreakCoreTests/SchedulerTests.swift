@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import StretchCore
+@testable import ABreakCore
 
 private func config() -> SchedulerConfig {
     var c = SchedulerConfig()
@@ -121,4 +121,14 @@ private extension Scheduler {
     #expect(rule.isActive(udp))
     var busy = idle; busy.cpuPercent = 12
     #expect(rule.isActive(busy))
+}
+
+@Test func intervalReminderCountsOnlyActiveTime() {
+    var r = IntervalReminder(interval: 10)
+    var fired = 0
+    for i in 0..<30 where r.tick(1, active: i % 2 == 0) { fired += 1 }
+    #expect(fired == 1)
+    #expect(r.elapsed == 5)
+    r.reset()
+    #expect(r.elapsed == 0)
 }

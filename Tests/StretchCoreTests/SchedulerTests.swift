@@ -1,0 +1,124 @@
+import Foundation
+import Testing
+@testable import StretchCore
+
+private func config() -> SchedulerConfig {
+    var c = SchedulerConfig()
+    c.workInterval = 100
+    c.shortBreak = 10
+    c.longBreak = 30
+    c.longBreakEvery = 2
+    c.preBreakWarning = 5
+    c.idlePauseAfter = 60
+    c.idleResetAfter = 300
+    c.resumeCooldown = 20
+    return c
+}
+
+private extension Scheduler {
+    mutating func run(_ seconds: Int, idle: TimeInterval = 0, reasons: [String] = []) {
+        for _ in 0..<seconds { tick(1, idle: idle, pauseReasons: reasons) }
+    }
+}
+
+@Test func workCountdownEntersPreBreakThenBreak() {
+    var s = Scheduler(config: config())
+    s.run(94)
+    #expect(s.phase == .working)
+    s.run(1)
+    #expect(s.phase == .preBreak)
+    s.run(5)
+    #expect(s.phase == .onBreak(long: false))
+    s.run(10)
+    #expect(s.phase == .working)
+    #expect(s.completedBreaks == 1)
+    #expect(s.workRemaining == 100)
+}
+
+@Test func everyNthBreakIsLong() {
+    var s = Scheduler(config: config())
+    s.run(100 + 10)
+    s.run(100)
+    #expect(s.phase == .onBreak(long: true))
+    #expect(s.breakRemaining == 30)
+}
+
+@Test func idleFreezesThenResets() {
+    var s = Scheduler(config: config())
+    s.run(10)
+    s.run(10, idle: 120)
+    #expect(s.workRemaining == 90)
+    #expect(s.isIdle)
+    s.run(1, idle: 300)
+    #expect(s.workRemaining == 100)
+}
+
+@Test func idleDoesNotStopRunningBreak() {
+    var s = Scheduler(config: config())
+    s.startBreak()
+    s.run(10, idle: 400)
+    #expect(s.phase == .working)
+    #expect(s.completedBreaks == 1)
+}
+
+@Test func smartPauseCancelsBreakAndAppliesCooldown() {
+    var s = Scheduler(config: config())
+    s.run(100)
+    #expect(s.phase == .onBreak(long: false))
+    s.run(30, reasons: ["remote"])
+    #expect(s.phase == .working)
+    #expect(s.isPaused)
+    #expect(s.completedBreaks == 0)
+    s.run(1)
+    #expect(!s.isPaused)
+    #expect(s.workRemaining == 19)
+}
+
+@Test func smartPauseFreezesWorkCountdown() {
+    var s = Scheduler(config: config())
+    s.run(30)
+    s.run(50, reasons: ["meeting"])
+    s.run(1)
+    #expect(s.workRemaining == 69)
+}
+
+@Test func postponeAndSkip() {
+    var s = Scheduler(config: config())
+    s.startBreak()
+    s.postpone(60)
+    #expect(s.phase == .working)
+    #expect(s.workRemaining == 60)
+    s.startBreak()
+    s.skipBreak()
+    #expect(s.workRemaining == 100)
+    #expect(s.completedBreaks == 0)
+}
+
+@Test func shrinkingWorkIntervalClampsRemaining() {
+    var s = Scheduler(config: config())
+    s.config.workInterval = 50
+    #expect(s.workRemaining == 50)
+}
+
+@Test func latchNeedsConsecutiveHitsAndHoldsOff() {
+    var l = ActivityLatch(onAfter: 2, offAfter: 20)
+    let t0 = Date(timeIntervalSince1970: 0)
+    let steps: [(Bool, TimeInterval, Bool)] = [
+        (true, 0, false), (false, 2, false), (true, 4, false),
+        (true, 6, true), (false, 20, true), (false, 26, false),
+    ]
+    for (input, offset, expected) in steps {
+        let on = l.update(input, at: t0 + offset)
+        #expect(on == expected, "t+\(offset)")
+    }
+}
+
+@Test func remoteEvidenceRule() {
+    let rule = RemoteEvidenceRule()
+    let idle = RemoteProcessSample(pid: 1, name: "UURemoteServer", tcpEstablished: 1, udpSockets: 0, cpuPercent: 0.1, holdsDisplayAssertion: false)
+    #expect(!rule.isActive(idle))
+    var udp = idle; udp.udpSockets = 2
+    #expect(rule.isActive(udp))
+    var busy = idle; busy.cpuPercent = 12
+    #expect(rule.isActive(busy))
+}

@@ -14,7 +14,7 @@ Inspired by [LookAway](https://lookaway.app). ABreak is an independent project, 
   - you are remote-controlling another device (the client app is in front)
   - the microphone or camera is in use (meetings, calls)
   - video is playing (some app keeps the display awake)
-  - a fullscreen app or an app from your list is in front
+  - an app from your list is in front, or (opt-in) any fullscreen app is in front
 - Idle detection: stepping away pauses the timer; a long absence counts as a break
 - **No permissions required**: no Screen Recording, Accessibility, or Microphone access
 

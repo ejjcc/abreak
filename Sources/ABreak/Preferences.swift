@@ -34,6 +34,7 @@ enum Pref {
     static let menuBarTimerStyle = "menuBarTimerStyle"
 
     /// Defaults mirror the owner's LookAway setup: 45-min focus, 30-s short / 3-min long breaks,
+    /// fullscreen pause off (LookAway has none; fullscreen video is covered by video detection),
     /// pause on meetings and video, posture every 20 min at large size in the screen center.
     static func register() {
         UserDefaults.standard.register(defaults: [
@@ -53,7 +54,7 @@ enum Pref {
             micIgnoredProcesses: "",
             pauseOnVideo: true,
             videoIgnoredProcesses: "caffeinate, Amphetamine, KeepingYouAwake, Lungo",
-            pauseOnFullscreen: true,
+            pauseOnFullscreen: false,
             pauseApps: "",
             playSounds: true,
             allowSkip: true,

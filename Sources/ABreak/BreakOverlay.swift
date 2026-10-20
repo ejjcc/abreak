@@ -42,8 +42,9 @@ final class BreakOverlay {
             window.isOpaque = false
             window.backgroundColor = .clear
             window.isReleasedWhenClosed = false
+            // Double Esc is a deliberate gesture, so it skips immediately without the button's delay.
             window.onDoubleEscape = { [weak self] in
-                if self?.model.canSkip == true { self?.model.onSkip() }
+                if self?.model.allowSkip == true { self?.model.onSkip() }
             }
             window.contentView = NSHostingView(rootView: BreakView(model: model))
             window.alphaValue = 0
@@ -151,7 +152,7 @@ private struct BreakView: View {
                     }
                 }
                 .buttonStyle(PillButtonStyle())
-                if model.canSkip {
+                if model.allowSkip {
                     HStack(spacing: 6) {
                         Text("Press")
                         Text("Esc")
@@ -163,7 +164,6 @@ private struct BreakView: View {
                     }
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.45))
-                    .transition(.opacity)
                 }
             }
             .animation(.easeInOut, value: model.canSkip)

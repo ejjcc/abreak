@@ -53,7 +53,7 @@ struct SettingsView: View {
                     .disabled(longBreakEvery == 0)
                 Stepper("Heads-up \(Int(preBreakSeconds)) s before a break", value: $preBreakSeconds, in: 0...60, step: 5)
                 Toggle("Allow skipping breaks", isOn: $allowSkip)
-                Stepper("Skip available after \(Int(skipDelaySeconds)) s", value: $skipDelaySeconds, in: 0...30)
+                Stepper("Skip button enabled after \(Int(skipDelaySeconds)) s (double Esc skips anytime)", value: $skipDelaySeconds, in: 0...30)
                     .disabled(!allowSkip)
                 Toggle("Play a sound when a break ends", isOn: $playSounds)
             }

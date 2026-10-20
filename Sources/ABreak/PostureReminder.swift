@@ -70,7 +70,7 @@ private struct PostureView: View {
                 ZStack {
                     if dim {
                         RadialGradient(
-                            colors: [.black.opacity(0.12), .black.opacity(0.4)],
+                            colors: [.black.opacity(0.18), .black.opacity(0.5)],
                             center: .center, startRadius: 0, endRadius: max(geo.size.width, geo.size.height) * 0.6
                         )
                         .opacity(f.dim)
@@ -128,16 +128,17 @@ private struct PostureView: View {
             Capsule()
                 .fill(Color(white: 0.95))
                 .overlay(Capsule().strokeBorder(.white.opacity(0.9), lineWidth: 1))
-                .shadow(color: .black.opacity(0.25), radius: width * 0.15, y: width * 0.05)
+                .shadow(color: .black.opacity(0.19), radius: width * 0.18, y: width * 0.05)
                 .frame(width: width, height: width * (1 + f.stretch))
             Circle()
                 .fill(LinearGradient(
-                    colors: [Color(red: 0.98, green: 0.55, blue: 0.25), Color(red: 0.93, green: 0.36, blue: 0.62), Color(red: 0.82, green: 0.38, blue: 0.86)],
+                    colors: [Color(red: 1.0, green: 0.573, blue: 0.22), Color(red: 0.95, green: 0.38, blue: 0.55), Color(red: 0.902, green: 0.302, blue: 0.808)],
                     startPoint: .topTrailing, endPoint: .bottomLeading
                 ))
                 .overlay(
                     Image(systemName: "arrow.up")
                         .font(.system(size: inner * 0.42, weight: .heavy))
+                        .scaleEffect(x: 1, y: 1.18)
                         .foregroundStyle(Color(white: 0.12))
                 )
                 .frame(width: inner, height: inner)
@@ -153,11 +154,13 @@ private struct PostureView: View {
     }
 
     /// 3x3 grid position; the figure's full (stretched) box is centered on the anchor.
+    /// The middle row sits above true center: LookAway's stretched pill tops out at ~27% of screen height.
     private func anchor(in size: CGSize) -> CGPoint {
         let margin = width * 1.4
-        let col = CGFloat(position % 3), row = CGFloat(position / 3)
+        let col = CGFloat(position % 3), row = position / 3
         let x = margin + (size.width - 2 * margin) * col / 2
-        let y = margin + (size.height - 2 * margin) * row / 2
+        let middleY = size.height * 0.272 + width * (1 + Self.maxStretch) / 2
+        let y = [margin, middleY, size.height - margin][row]
         return CGPoint(x: x, y: y)
     }
 }

@@ -92,66 +92,89 @@ private final class OverlayWindow: NSWindow {
 private struct BreakView: View {
     @ObservedObject var model: BreakModel
 
-    var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(white: 0.14), .black], startPoint: .top, endPoint: .bottom)
+    /// Vertical centers as fractions of screen height, measured from LookAway frames (3024x1964 @2x).
+    private enum Y {
+        static let clock = 0.084
+        static let buttons = 0.893
+        static let hint = 0.937
+        static let short = (title: 0.382, subtitle: 0.450, divider: 0.504, countdown: 0.570)
+        static let long = (tag: 0.330, title: 0.412, subtitle: 0.479, divider: 0.533, countdown: 0.599)
+    }
 
-            VStack {
+    /// Background gray levels sampled top to bottom at 0, 25, 50, 75, 100% height.
+    private var background: LinearGradient {
+        let levels: [Double] = model.long ? [16, 12, 8, 4, 1] : [38, 30, 20, 10, 2]
+        let stops = levels.enumerated().map { i, v in
+            Gradient.Stop(color: Color(white: v / 255), location: Double(i) / Double(levels.count - 1))
+        }
+        return LinearGradient(stops: stops, startPoint: .top, endPoint: .bottom)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let h = geo.size.height
+            let x = geo.size.width / 2
+            let y = model.long
+                ? (tag: Y.long.tag, title: Y.long.title, subtitle: Y.long.subtitle, divider: Y.long.divider, countdown: Y.long.countdown)
+                : (tag: 0, title: Y.short.title, subtitle: Y.short.subtitle, divider: Y.short.divider, countdown: Y.short.countdown)
+
+            ZStack {
+                background
+
                 TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    Label(ctx.date.formatted(date: .omitted, time: .shortened), systemImage: "clock")
+                    Label(ctx.date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits)), systemImage: "clock")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.85))
                 }
-                .padding(.top, 40)
-                Spacer()
-            }
+                .position(x: x, y: h * Y.clock)
 
-            VStack(spacing: 0) {
                 if model.long {
                     Text("Long Break")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(RoundedRectangle(cornerRadius: 7).fill(.white.opacity(0.08)))
-                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.12)))
-                        .padding(.bottom, 24)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.08)))
+                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.12)))
+                        .position(x: x, y: h * y.tag)
                 }
                 Text(model.long ? "Time for a longer break" : "Rest your eyes")
                     .font(.system(size: 54, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
+                    .position(x: x, y: h * y.title)
                 Text(model.long ? "Step away, stretch, and look into the distance" : "Look at something far away and let your eyes relax")
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white.opacity(0.75))
-                    .padding(.top, 18)
+                    .position(x: x, y: h * y.subtitle)
                 Capsule()
                     .fill(.white.opacity(0.25))
                     .frame(width: 100, height: 2)
-                    .padding(.top, 40)
+                    .position(x: x, y: h * y.divider)
                 Text(DurationFormat.clock(model.remaining))
                     .font(.system(size: 40, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(.white.opacity(0.55))
                     .contentTransition(.numericText(countsDown: true))
                     .animation(.snappy, value: Int(model.remaining.rounded(.up)))
-                    .padding(.top, 40)
-            }
+                    .position(x: x, y: h * y.countdown)
 
-            VStack(spacing: 18) {
-                Spacer()
                 HStack(spacing: 12) {
                     if model.allowSkip {
                         Button(action: model.onSkip) {
                             Label(model.canSkip ? "Skip Break" : "Skip available soon",
-                                  systemImage: model.canSkip ? "forward" : "hourglass")
+                                  systemImage: model.canSkip ? "chevron.right.2" : "hourglass")
+                                .frame(width: 118)
                         }
                         .disabled(!model.canSkip)
                     }
                     Button(action: model.lockScreen) {
                         Label("Lock Screen", systemImage: "lock")
+                            .frame(width: 113)
                     }
                 }
                 .buttonStyle(PillButtonStyle())
+                .position(x: x, y: h * Y.buttons)
+
                 if model.allowSkip {
                     HStack(spacing: 6) {
                         Text("Press")
@@ -164,10 +187,9 @@ private struct BreakView: View {
                     }
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.45))
+                    .position(x: x, y: h * Y.hint)
                 }
             }
-            .animation(.easeInOut, value: model.canSkip)
-            .padding(.bottom, 80)
         }
         .ignoresSafeArea()
     }
@@ -180,8 +202,8 @@ private struct PillButtonStyle: ButtonStyle {
         configuration.label
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(.white.opacity(isEnabled ? 0.95 : 0.4))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 16)
+            .frame(height: 35)
             .background(Capsule().fill(.white.opacity(configuration.isPressed ? 0.16 : 0.08)))
             .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
     }

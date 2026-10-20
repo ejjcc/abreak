@@ -132,9 +132,9 @@ private struct PostureView: View {
 
     private func figure(_ f: PostureFrame) -> some View {
         let inner = width * 0.8
-        let top = f.head * width
-        let length = max(f.tail - f.head, 1) * width
-        let box = Self.span * width
+        let top = CGFloat(f.head) * width
+        let length = CGFloat(max(f.tail - f.head, 1)) * width
+        let box = CGFloat(Self.span) * width
         // Scale around the circle so appearing/vanishing happens where the circle is.
         let anchor = UnitPoint(x: 0.5, y: (top + width / 2) / box)
         return ZStack(alignment: .top) {
@@ -169,10 +169,10 @@ private struct PostureView: View {
     /// Middle row: the stretched pill's top sits at ~27% of screen height, as measured on LookAway.
     private func anchor(in size: CGSize) -> CGPoint {
         let margin = width * 0.6
-        let box = Self.span * width
+        let box = CGFloat(Self.span) * width
         let col = CGFloat(position % 3), row = position / 3
         let x = width + (size.width - 2 * width) * col / 2
-        let middleTop = size.height * 0.272 - Self.stretchedHead * width
+        let middleTop = size.height * 0.272 - CGFloat(Self.stretchedHead) * width
         let top = [margin, middleTop, size.height - margin - box][row]
         return CGPoint(x: x, y: top + box / 2)
     }

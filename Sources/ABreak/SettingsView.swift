@@ -38,7 +38,7 @@ struct SettingsView: View {
     @AppStorage(Pref.posturePosition) private var posturePosition = 4
     @AppStorage(Pref.postureSound) private var postureSound = true
     @AppStorage(Pref.dimForReminders) private var dimForReminders = true
-    @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 10.0
+    @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 3.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private static let positions = ["Top Left", "Top", "Top Right", "Left", "Center", "Right", "Bottom Left", "Bottom", "Bottom Right"]
@@ -53,7 +53,7 @@ struct SettingsView: View {
                     .disabled(longBreakEvery == 0)
                 Stepper("Heads-up \(Int(preBreakSeconds)) s before a break", value: $preBreakSeconds, in: 0...60, step: 5)
                 Toggle("Allow skipping breaks", isOn: $allowSkip)
-                Stepper("Skip available after \(Int(skipDelaySeconds)) s", value: $skipDelaySeconds, in: 0...60, step: 5)
+                Stepper("Skip available after \(Int(skipDelaySeconds)) s", value: $skipDelaySeconds, in: 0...30)
                     .disabled(!allowSkip)
                 Toggle("Play a sound when a break ends", isOn: $playSounds)
             }

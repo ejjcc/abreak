@@ -62,7 +62,7 @@ enum Pref {
             posturePosition: 4,
             postureSound: true,
             dimForReminders: true,
-            skipDelaySeconds: 10,
+            skipDelaySeconds: 3,
         ])
     }
 

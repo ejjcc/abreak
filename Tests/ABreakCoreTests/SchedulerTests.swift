@@ -148,3 +148,13 @@ private extension Scheduler {
     s.run(1)
     #expect(s.phase == .working)
 }
+
+@Test func durationFormats() {
+    #expect(DurationFormat.compact(45 * 60) == "45m")
+    #expect(DurationFormat.compact(44 * 60 + 1) == "45m")
+    #expect(DurationFormat.compact(60) == "1m")
+    #expect(DurationFormat.compact(59) == "59s")
+    #expect(DurationFormat.compact(0) == "0s")
+    #expect(DurationFormat.clock(27) == "00:27")
+    #expect(DurationFormat.clock(176.4) == "02:57")
+}

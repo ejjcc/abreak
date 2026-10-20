@@ -26,13 +26,19 @@ enum Pref {
     static let allowSkip = "allowSkip"
     static let postureEnabled = "postureEnabled"
     static let postureMinutes = "postureMinutes"
+    static let postureSize = "postureSize"
+    static let posturePosition = "posturePosition"
+    static let postureSound = "postureSound"
+    static let dimForReminders = "dimForReminders"
+    static let skipDelaySeconds = "skipDelaySeconds"
 
-    /// Defaults mirror the owner's LookAway setup: 45-min focus, pause on meetings and video, posture every 20 min.
+    /// Defaults mirror the owner's LookAway setup: 45-min focus, 30-s short / 3-min long breaks,
+    /// pause on meetings and video, posture every 20 min at large size in the screen center.
     static func register() {
         UserDefaults.standard.register(defaults: [
             workMinutes: 45,
-            breakSeconds: 20,
-            longBreakMinutes: 5,
+            breakSeconds: 30,
+            longBreakMinutes: 3,
             longBreakEvery: 4,
             preBreakSeconds: 10,
             idlePauseSeconds: 60,
@@ -52,6 +58,11 @@ enum Pref {
             allowSkip: true,
             postureEnabled: true,
             postureMinutes: 20,
+            postureSize: 2,
+            posturePosition: 4,
+            postureSound: true,
+            dimForReminders: true,
+            skipDelaySeconds: 10,
         ])
     }
 

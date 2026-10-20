@@ -1,3 +1,4 @@
+import ABreakCore
 import AppKit
 import SwiftUI
 
@@ -7,8 +8,14 @@ final class BreakModel: ObservableObject {
     @Published var total: TimeInterval = 1
     @Published var long = false
     @Published var allowSkip = true
+    @Published var skipDelay: TimeInterval = 10
     var onSkip: () -> Void = {}
-    var onPostpone: () -> Void = {}
+
+    var canSkip: Bool { allowSkip && total - remaining >= skipDelay }
+
+    func lockScreen() {
+        ScreenLock.lock()
+    }
 }
 
 /// Full-screen break cover on every display.
@@ -24,6 +31,7 @@ final class BreakOverlay {
         model.total = duration
         model.remaining = duration
         model.allowSkip = Pref.bool(Pref.allowSkip)
+        model.skipDelay = max(0, Pref.double(Pref.skipDelaySeconds))
         guard windows.isEmpty else { return }
 
         for screen in NSScreen.screens {
@@ -35,7 +43,7 @@ final class BreakOverlay {
             window.backgroundColor = .clear
             window.isReleasedWhenClosed = false
             window.onDoubleEscape = { [weak self] in
-                if self?.model.allowSkip == true { self?.model.onSkip() }
+                if self?.model.canSkip == true { self?.model.onSkip() }
             }
             window.contentView = NSHostingView(rootView: BreakView(model: model))
             window.alphaValue = 0
@@ -80,61 +88,101 @@ private final class OverlayWindow: NSWindow {
     }
 }
 
-private struct BlurBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let v = NSVisualEffectView()
-        v.material = .fullScreenUI
-        v.blendingMode = .behindWindow
-        v.state = .active
-        v.appearance = NSAppearance(named: .darkAqua)
-        return v
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-}
-
 private struct BreakView: View {
     @ObservedObject var model: BreakModel
 
     var body: some View {
         ZStack {
-            BlurBackground()
-            Color.black.opacity(0.35)
-            VStack(spacing: 28) {
-                Text(model.long ? "起身活动一下" : "让眼睛休息一下")
-                    .font(.system(size: 46, weight: .regular, design: .serif))
-                    .italic()
-                Text(model.long ? "离开屏幕，伸展肩颈，喝点水" : "看向 6 米外的物体，放松眼部肌肉")
-                    .font(.title3)
+            LinearGradient(colors: [Color(white: 0.14), .black], startPoint: .top, endPoint: .bottom)
+
+            VStack {
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    Label(ctx.date.formatted(date: .omitted, time: .shortened), systemImage: "clock")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+                .padding(.top, 40)
+                Spacer()
+            }
+
+            VStack(spacing: 0) {
+                if model.long {
+                    Text("长休息")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 7).fill(.white.opacity(0.08)))
+                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.12)))
+                        .padding(.bottom, 24)
+                }
+                Text(model.long ? "让眼睛好好休息" : "休息一下眼睛")
+                    .font(.system(size: 54, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(model.long ? "看向远方，让视线自由游移，稍后再回来" : "看向远处，让眼睛放松片刻")
+                    .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white.opacity(0.75))
-                Text(clock(model.remaining))
-                    .font(.system(size: 96, weight: .ultraLight, design: .rounded))
+                    .padding(.top, 18)
+                Capsule()
+                    .fill(.white.opacity(0.25))
+                    .frame(width: 100, height: 2)
+                    .padding(.top, 40)
+                Text(DurationFormat.clock(model.remaining))
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
                     .monospacedDigit()
-                ProgressView(value: 1 - model.remaining / max(model.total, 1))
-                    .progressViewStyle(.linear)
-                    .tint(.white)
-                    .frame(width: 320)
-                HStack(spacing: 16) {
-                    Button("推迟 5 分钟") { model.onPostpone() }
+                    .foregroundStyle(.white.opacity(0.55))
+                    .contentTransition(.numericText(countsDown: true))
+                    .animation(.snappy, value: Int(model.remaining.rounded(.up)))
+                    .padding(.top, 40)
+            }
+
+            VStack(spacing: 18) {
+                Spacer()
+                HStack(spacing: 12) {
                     if model.allowSkip {
-                        Button("跳过") { model.onSkip() }
+                        Button(action: model.onSkip) {
+                            Label(model.canSkip ? "跳过休息" : "稍后可跳过",
+                                  systemImage: model.canSkip ? "forward" : "hourglass")
+                        }
+                        .disabled(!model.canSkip)
+                    }
+                    Button(action: model.lockScreen) {
+                        Label("锁定屏幕", systemImage: "lock")
                     }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                if model.allowSkip {
-                    Text("连按两次 Esc 跳过")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.5))
+                .buttonStyle(PillButtonStyle())
+                if model.canSkip {
+                    HStack(spacing: 6) {
+                        Text("连按两次")
+                        Text("Esc")
+                            .font(.system(size: 11, weight: .semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(0.12)))
+                        Text("跳过休息")
+                    }
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .transition(.opacity)
                 }
             }
-            .foregroundStyle(.white)
+            .animation(.easeInOut, value: model.canSkip)
+            .padding(.bottom, 80)
         }
         .ignoresSafeArea()
     }
 }
 
-func clock(_ seconds: TimeInterval) -> String {
-    let s = Int(seconds.rounded(.up))
-    return String(format: "%d:%02d", s / 60, s % 60)
+private struct PillButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(.white.opacity(isEnabled ? 0.95 : 0.4))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 11)
+            .background(Capsule().fill(.white.opacity(configuration.isPressed ? 0.16 : 0.08)))
+            .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+    }
 }

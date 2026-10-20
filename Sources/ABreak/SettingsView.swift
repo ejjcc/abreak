@@ -11,8 +11,8 @@ struct SettingsView: View {
     @ObservedObject var status: StatusModel
 
     @AppStorage(Pref.workMinutes) private var workMinutes = 45.0
-    @AppStorage(Pref.breakSeconds) private var breakSeconds = 20.0
-    @AppStorage(Pref.longBreakMinutes) private var longBreakMinutes = 5.0
+    @AppStorage(Pref.breakSeconds) private var breakSeconds = 30.0
+    @AppStorage(Pref.longBreakMinutes) private var longBreakMinutes = 3.0
     @AppStorage(Pref.longBreakEvery) private var longBreakEvery = 4
     @AppStorage(Pref.preBreakSeconds) private var preBreakSeconds = 10.0
     @AppStorage(Pref.idlePauseSeconds) private var idlePauseSeconds = 60.0
@@ -34,7 +34,14 @@ struct SettingsView: View {
     @AppStorage(Pref.allowSkip) private var allowSkip = true
     @AppStorage(Pref.postureEnabled) private var postureEnabled = true
     @AppStorage(Pref.postureMinutes) private var postureMinutes = 20.0
+    @AppStorage(Pref.postureSize) private var postureSize = 2
+    @AppStorage(Pref.posturePosition) private var posturePosition = 4
+    @AppStorage(Pref.postureSound) private var postureSound = true
+    @AppStorage(Pref.dimForReminders) private var dimForReminders = true
+    @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 10.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+
+    private static let positions = ["左上", "上方", "右上", "左侧", "中央", "右侧", "左下", "下方", "右下"]
 
     var body: some View {
         Form {
@@ -46,13 +53,27 @@ struct SettingsView: View {
                     .disabled(longBreakEvery == 0)
                 Stepper("提前 \(Int(preBreakSeconds)) 秒提醒", value: $preBreakSeconds, in: 0...60, step: 5)
                 Toggle("允许跳过休息", isOn: $allowSkip)
+                Stepper("休息开始 \(Int(skipDelaySeconds)) 秒后才可跳过", value: $skipDelaySeconds, in: 0...60, step: 5)
+                    .disabled(!allowSkip)
                 Toggle("休息结束时播放提示音", isOn: $playSounds)
             }
 
             Section("坐姿提醒") {
                 Toggle("定时提醒调整坐姿", isOn: $postureEnabled)
-                Stepper("每 \(Int(postureMinutes)) 分钟一次", value: $postureMinutes, in: 5...120, step: 5)
-                    .disabled(!postureEnabled)
+                Group {
+                    Stepper("每 \(Int(postureMinutes)) 分钟一次", value: $postureMinutes, in: 5...120, step: 5)
+                    Picker("大小", selection: $postureSize) {
+                        Text("小").tag(0)
+                        Text("中").tag(1)
+                        Text("大").tag(2)
+                    }
+                    Picker("位置", selection: $posturePosition) {
+                        ForEach(Array(Self.positions.enumerated()), id: \.offset) { Text($0.element).tag($0.offset) }
+                    }
+                    Toggle("提醒时调暗屏幕", isOn: $dimForReminders)
+                    Toggle("提醒音效", isOn: $postureSound)
+                }
+                .disabled(!postureEnabled)
             }
 
             Section("离开检测") {

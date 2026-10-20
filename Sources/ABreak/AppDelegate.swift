@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let monitor = PauseMonitor()
     private let overlay = BreakOverlay()
     private let preBreak = PreBreakPanel()
-    private let toast = Toast()
+    private let postureReminder = PostureReminder()
     private var posture = IntervalReminder(interval: 0)
     private let status = StatusModel()
     private var statusItem: NSStatusItem!
@@ -31,7 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
 
         overlay.model.onSkip = { [weak self] in self?.act { $0.skipBreak() } }
-        overlay.model.onPostpone = { [weak self] in self?.act { $0.postpone(5 * 60) } }
         preBreak.model.onStart = { [weak self] in self?.act { $0.startBreak() } }
         preBreak.model.onPostpone = { [weak self] in self?.act { $0.postpone(5 * 60) } }
         preBreak.model.onSkip = { [weak self] in self?.act { $0.skipBreak() } }
@@ -46,6 +45,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         Log.write("launched")
         render()
+        // `--preview posture|break`: show a component right away, for visual checks.
+        if let i = CommandLine.arguments.firstIndex(of: "--preview"), i + 1 < CommandLine.arguments.count {
+            switch CommandLine.arguments[i + 1] {
+            case "posture": postureReminder.show()
+            case "break": act { $0.startBreak() }
+            default: break
+            }
+        }
         // Common modes keep the timer running while the status menu is open.
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
@@ -75,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         posture.interval = Pref.bool(Pref.postureEnabled) ? max(5, Pref.double(Pref.postureMinutes)) * 60 : 0
         let working = scheduler.phase == .working && !scheduler.isPaused && !scheduler.isIdle
         if posture.tick(dt, active: working) {
-            toast.show(symbol: "figure.stand", text: "坐直，放松肩膀")
+            postureReminder.show()
             Log.write("posture reminder")
         }
     }
@@ -131,10 +138,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             title = ""
         case .onBreak:
             symbol = "eye.slash"
-            title = " " + clock(scheduler.breakRemaining)
+            title = " " + DurationFormat.compact(scheduler.breakRemaining)
         default:
             symbol = scheduler.isIdle ? "moon.zzz" : "eye"
-            title = " " + clock(scheduler.workRemaining)
+            title = " " + DurationFormat.compact(scheduler.workRemaining)
         }
         button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "ABreak")
         button.title = title
@@ -157,9 +164,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if scheduler.isPaused {
             header = "已暂停"
         } else if case .onBreak = scheduler.phase {
-            header = "休息中，剩余 \(clock(scheduler.breakRemaining))"
+            header = "休息中，剩余 \(DurationFormat.clock(scheduler.breakRemaining))"
         } else {
-            header = "\(clock(scheduler.workRemaining)) 后\(scheduler.nextBreakIsLong ? "长" : "")休息" + (scheduler.isIdle ? "（离开中）" : "")
+            header = "\(DurationFormat.clock(scheduler.workRemaining)) 后\(scheduler.nextBreakIsLong ? "长" : "")休息" + (scheduler.isIdle ? "（离开中）" : "")
         }
         menu.addItem(disabled(header))
         for reason in scheduler.pauseReasons {
@@ -186,6 +193,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if monitor.manualUntil != nil {
             menu.addItem(item("恢复") { $0.pauseManually(until: nil) })
         }
+
+        menu.addItem(item("预览坐姿提醒") { $0.postureReminder.show() })
 
         menu.addItem(.separator())
         menu.addItem(item("设置…", key: ",") { $0.openSettings() })

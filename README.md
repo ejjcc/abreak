@@ -25,7 +25,8 @@ scripts/build-app.sh --install  # copy to /Applications and launch
 ## 调试
 
 ```sh
-build/ABreak.app/Contents/MacOS/ABreak --probe   # print raw detector signals every 2s
+build/ABreak.app/Contents/MacOS/ABreak --probe              # print raw detector signals every 2s
+build/ABreak.app/Contents/MacOS/ABreak --preview posture    # show the posture reminder now (or: break)
 ```
 
 状态切换记录在 `~/Library/Logs/ABreak.log`。

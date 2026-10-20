@@ -155,6 +155,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ? tr("Paused: ", "已暂停：") + scheduler.pauseReasons.joined(separator: tr("; ", "；"))
             : scheduler.isIdle ? tr("Paused while you are away", "你离开时暂停计时") : nil
 
+        // Keep the settings title in sync with a live language switch.
+        settingsWindow?.title = tr("ABreak Settings", "ABreak 设置")
         status.reasons = scheduler.pauseReasons
         status.remoteSamples = remoteSummary()
     }

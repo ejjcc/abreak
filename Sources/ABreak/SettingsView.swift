@@ -52,6 +52,14 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section {
+                Picker(tr("Language", "语言"), selection: $language) {
+                    Text(tr("Follow System", "跟随系统")).tag(AppLanguage.system.rawValue)
+                    Text("English").tag(AppLanguage.english.rawValue)
+                    Text("简体中文").tag(AppLanguage.chinese.rawValue)
+                }
+            }
+
             Section(tr("Breaks", "休息")) {
                 Stepper(tr("Break every \(Int(workMinutes)) min", "每 \(Int(workMinutes)) 分钟休息一次"), value: $workMinutes, in: 1...120)
                 Stepper(tr("Short break: \(Int(breakSeconds)) s", "短休息：\(Int(breakSeconds)) 秒"), value: $breakSeconds, in: 5...300, step: 5)
@@ -124,11 +132,6 @@ struct SettingsView: View {
             }
 
             Section(tr("General", "通用")) {
-                Picker(tr("Language", "语言"), selection: $language) {
-                    Text(tr("Follow System", "跟随系统")).tag(AppLanguage.system.rawValue)
-                    Text("English").tag(AppLanguage.english.rawValue)
-                    Text("简体中文").tag(AppLanguage.chinese.rawValue)
-                }
                 Picker(tr("Menu bar timer", "菜单栏计时"), selection: $menuBarTimerStyle) {
                     Text(tr("Countdown (44:59)", "倒计时（44:59）")).tag(MenuBarTimerStyle.countdown.rawValue)
                     Text(tr("Minutes (45m)", "分钟（45m）")).tag(MenuBarTimerStyle.minutes.rawValue)

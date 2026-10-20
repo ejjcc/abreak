@@ -107,7 +107,7 @@ private struct BreakView: View {
 
             VStack(spacing: 0) {
                 if model.long {
-                    Text("长休息")
+                    Text("Long Break")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.7))
                         .padding(.horizontal, 10)
@@ -116,10 +116,10 @@ private struct BreakView: View {
                         .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.12)))
                         .padding(.bottom, 24)
                 }
-                Text(model.long ? "让眼睛好好休息" : "休息一下眼睛")
+                Text(model.long ? "Time for a longer break" : "Rest your eyes")
                     .font(.system(size: 54, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                Text(model.long ? "看向远方，让视线自由游移，稍后再回来" : "看向远处，让眼睛放松片刻")
+                Text(model.long ? "Step away, stretch, and look into the distance" : "Look at something far away and let your eyes relax")
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white.opacity(0.75))
                     .padding(.top, 18)
@@ -141,25 +141,25 @@ private struct BreakView: View {
                 HStack(spacing: 12) {
                     if model.allowSkip {
                         Button(action: model.onSkip) {
-                            Label(model.canSkip ? "跳过休息" : "稍后可跳过",
+                            Label(model.canSkip ? "Skip Break" : "Skip available soon",
                                   systemImage: model.canSkip ? "forward" : "hourglass")
                         }
                         .disabled(!model.canSkip)
                     }
                     Button(action: model.lockScreen) {
-                        Label("锁定屏幕", systemImage: "lock")
+                        Label("Lock Screen", systemImage: "lock")
                     }
                 }
                 .buttonStyle(PillButtonStyle())
                 if model.canSkip {
                     HStack(spacing: 6) {
-                        Text("连按两次")
+                        Text("Press")
                         Text("Esc")
                             .font(.system(size: 11, weight: .semibold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(0.12)))
-                        Text("跳过休息")
+                        Text("twice to skip")
                     }
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.45))

@@ -162,11 +162,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let header: String
         if scheduler.isPaused {
-            header = "已暂停"
+            header = "Paused"
         } else if case .onBreak = scheduler.phase {
-            header = "休息中，剩余 \(DurationFormat.clock(scheduler.breakRemaining))"
+            header = "On break, \(DurationFormat.clock(scheduler.breakRemaining)) left"
         } else {
-            header = "\(DurationFormat.clock(scheduler.workRemaining)) 后\(scheduler.nextBreakIsLong ? "长" : "")休息" + (scheduler.isIdle ? "（离开中）" : "")
+            header = "\(scheduler.nextBreakIsLong ? "Long break" : "Break") in \(DurationFormat.clock(scheduler.workRemaining))" + (scheduler.isIdle ? " (away)" : "")
         }
         menu.addItem(disabled(header))
         for reason in scheduler.pauseReasons {
@@ -174,34 +174,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
 
-        let breakNow = item("立即休息") { $0.act { $0.startBreak() } }
+        let breakNow = item("Take a Break Now") { $0.act { $0.startBreak() } }
         breakNow.isEnabled = !scheduler.isPaused
         menu.addItem(breakNow)
-        menu.addItem(item("重新计时") { $0.act { $0.resetWork() } })
+        menu.addItem(item("Restart Timer") { $0.act { $0.resetWork() } })
 
-        let pause = NSMenuItem(title: "暂停", action: nil, keyEquivalent: "")
+        let pause = NSMenuItem(title: "Pause", action: nil, keyEquivalent: "")
         let sub = NSMenu()
-        for (label, minutes) in [("30 分钟", 30.0), ("1 小时", 60), ("2 小时", 120)] {
+        for (label, minutes) in [("For 30 Minutes", 30.0), ("For 1 Hour", 60), ("For 2 Hours", 120)] {
             sub.addItem(item(label) { $0.pauseManually(until: Date().addingTimeInterval(minutes * 60)) })
         }
-        sub.addItem(item("直到明天") {
+        sub.addItem(item("Until Tomorrow") {
             $0.pauseManually(until: Calendar.current.startOfDay(for: Date().addingTimeInterval(86400)))
         })
-        sub.addItem(item("直到手动恢复") { $0.pauseManually(until: .distantFuture) })
+        sub.addItem(item("Until I Resume") { $0.pauseManually(until: .distantFuture) })
         pause.submenu = sub
         menu.addItem(pause)
         if monitor.manualUntil != nil {
-            menu.addItem(item("恢复") { $0.pauseManually(until: nil) })
+            menu.addItem(item("Resume") { $0.pauseManually(until: nil) })
         }
 
-        menu.addItem(item("预览坐姿提醒") { $0.postureReminder.show() })
+        menu.addItem(item("Preview Posture Reminder") { $0.postureReminder.show() })
 
         menu.addItem(.separator())
-        menu.addItem(item("设置…", key: ",") { $0.openSettings() })
-        menu.addItem(item("打开日志") { _ in
+        menu.addItem(item("Settings…", key: ",") { $0.openSettings() })
+        menu.addItem(item("Open Log") { _ in
             NSWorkspace.shared.open(FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/ABreak.log"))
         })
-        menu.addItem(item("退出", key: "q") { _ in NSApp.terminate(nil) })
+        menu.addItem(item("Quit ABreak", key: "q") { _ in NSApp.terminate(nil) })
     }
 
     private func pauseManually(until: Date?) {
@@ -212,7 +212,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func openSettings() {
         if settingsWindow == nil {
             let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(status: status)))
-            w.title = "ABreak 设置"
+            w.title = "ABreak Settings"
             w.styleMask = [.titled, .closable]
             w.isReleasedWhenClosed = false
             w.center()

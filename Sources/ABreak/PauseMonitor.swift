@@ -15,7 +15,7 @@ final class PauseMonitor {
 
         if let until = manualUntil {
             if until > now {
-                result.append(until == .distantFuture ? "手动暂停" : "手动暂停至 \(until.formatted(date: .omitted, time: .shortened))")
+                result.append(until == .distantFuture ? "Paused manually" : "Paused until \(until.formatted(date: .omitted, time: .shortened))")
             } else {
                 manualUntil = nil
             }
@@ -30,13 +30,13 @@ final class PauseMonitor {
         let frontID = front?.bundleIdentifier ?? ""
         let frontName = front?.localizedName ?? frontID
         if Pref.bool(Pref.pauseOnRemoteControlling), Pref.list(Pref.remoteClientBundleIDs).contains(frontID) {
-            result.append("正在远程控制其他设备（\(frontName)）")
+            result.append("Remote-controlling another device (\(frontName))")
         }
         if Pref.list(Pref.pauseApps).contains(frontID) {
-            result.append("指定应用在前台（\(frontName)）")
+            result.append("Pause app in front (\(frontName))")
         }
         if Pref.bool(Pref.pauseOnFullscreen), MediaDetectors.frontmostIsFullscreen() {
-            result.append("全屏应用（\(frontName)）")
+            result.append("Fullscreen app (\(frontName))")
         }
         return result
     }
@@ -48,7 +48,7 @@ final class PauseMonitor {
             remote.processNames = Pref.list(Pref.remoteHostProcesses)
             if remote.poll(now: now) {
                 let names = Set(remote.lastSamples.filter(remote.rule.isActive).map(\.name)).sorted()
-                result.append("本机被远程控制中（\(names.isEmpty ? "保持中" : names.joined(separator: ", "))）")
+                result.append("Being remote-controlled (\(names.isEmpty ? "holding" : names.joined(separator: ", ")))")
             }
         }
 
@@ -60,9 +60,9 @@ final class PauseMonitor {
                 .map(ProcessInspector.name(of:))
                 .filter { !ignored.contains($0) }
             if !mic.isEmpty {
-                result.append("麦克风使用中（\(Set(mic).sorted().joined(separator: ", "))）")
+                result.append("Microphone in use (\(Set(mic).sorted().joined(separator: ", ")))")
             } else if MediaDetectors.isCameraInUse() {
-                result.append("摄像头使用中")
+                result.append("Camera in use")
             }
         }
 
@@ -72,7 +72,7 @@ final class PauseMonitor {
                 assertions: ProcessInspector.powerAssertions()
             )
             if !holders.isEmpty {
-                result.append("视频播放中（\(Set(holders).sorted().joined(separator: ", "))）")
+                result.append("Video playing (\(Set(holders).sorted().joined(separator: ", ")))")
             }
         }
         return result

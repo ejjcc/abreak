@@ -41,83 +41,83 @@ struct SettingsView: View {
     @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 10.0
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
-    private static let positions = ["左上", "上方", "右上", "左侧", "中央", "右侧", "左下", "下方", "右下"]
+    private static let positions = ["Top Left", "Top", "Top Right", "Left", "Center", "Right", "Bottom Left", "Bottom", "Bottom Right"]
 
     var body: some View {
         Form {
-            Section("计时") {
-                Stepper("每工作 \(Int(workMinutes)) 分钟休息一次", value: $workMinutes, in: 1...120)
-                Stepper("短休息 \(Int(breakSeconds)) 秒", value: $breakSeconds, in: 5...300, step: 5)
-                Stepper(longBreakEvery == 0 ? "不安排长休息" : "每 \(longBreakEvery) 次短休息后一次长休息", value: $longBreakEvery, in: 0...10)
-                Stepper("长休息 \(Int(longBreakMinutes)) 分钟", value: $longBreakMinutes, in: 1...30)
+            Section("Breaks") {
+                Stepper("Break every \(Int(workMinutes)) min", value: $workMinutes, in: 1...120)
+                Stepper("Short break: \(Int(breakSeconds)) s", value: $breakSeconds, in: 5...300, step: 5)
+                Stepper(longBreakEvery == 0 ? "No long breaks" : "Long break every \(longBreakEvery) breaks", value: $longBreakEvery, in: 0...10)
+                Stepper("Long break: \(Int(longBreakMinutes)) min", value: $longBreakMinutes, in: 1...30)
                     .disabled(longBreakEvery == 0)
-                Stepper("提前 \(Int(preBreakSeconds)) 秒提醒", value: $preBreakSeconds, in: 0...60, step: 5)
-                Toggle("允许跳过休息", isOn: $allowSkip)
-                Stepper("休息开始 \(Int(skipDelaySeconds)) 秒后才可跳过", value: $skipDelaySeconds, in: 0...60, step: 5)
+                Stepper("Heads-up \(Int(preBreakSeconds)) s before a break", value: $preBreakSeconds, in: 0...60, step: 5)
+                Toggle("Allow skipping breaks", isOn: $allowSkip)
+                Stepper("Skip available after \(Int(skipDelaySeconds)) s", value: $skipDelaySeconds, in: 0...60, step: 5)
                     .disabled(!allowSkip)
-                Toggle("休息结束时播放提示音", isOn: $playSounds)
+                Toggle("Play a sound when a break ends", isOn: $playSounds)
             }
 
-            Section("坐姿提醒") {
-                Toggle("定时提醒调整坐姿", isOn: $postureEnabled)
+            Section("Posture Reminder") {
+                Toggle("Remind me to sit upright", isOn: $postureEnabled)
                 Group {
-                    Stepper("每 \(Int(postureMinutes)) 分钟一次", value: $postureMinutes, in: 5...120, step: 5)
-                    Picker("大小", selection: $postureSize) {
-                        Text("小").tag(0)
-                        Text("中").tag(1)
-                        Text("大").tag(2)
+                    Stepper("Every \(Int(postureMinutes)) min", value: $postureMinutes, in: 5...120, step: 5)
+                    Picker("Size", selection: $postureSize) {
+                        Text("Small").tag(0)
+                        Text("Medium").tag(1)
+                        Text("Large").tag(2)
                     }
-                    Picker("位置", selection: $posturePosition) {
+                    Picker("Position", selection: $posturePosition) {
                         ForEach(Array(Self.positions.enumerated()), id: \.offset) { Text($0.element).tag($0.offset) }
                     }
-                    Toggle("提醒时调暗屏幕", isOn: $dimForReminders)
-                    Toggle("提醒音效", isOn: $postureSound)
+                    Toggle("Dim the screen", isOn: $dimForReminders)
+                    Toggle("Sound", isOn: $postureSound)
                 }
                 .disabled(!postureEnabled)
             }
 
-            Section("离开检测") {
-                Stepper("无操作 \(Int(idlePauseSeconds)) 秒后暂停计时", value: $idlePauseSeconds, in: 10...600, step: 10)
-                Stepper("无操作 \(Int(idleResetMinutes)) 分钟视为已休息", value: $idleResetMinutes, in: 1...60)
+            Section("Idle") {
+                Stepper("Pause timer after \(Int(idlePauseSeconds)) s idle", value: $idlePauseSeconds, in: 10...600, step: 10)
+                Stepper("Count \(Int(idleResetMinutes)) min idle as a break", value: $idleResetMinutes, in: 1...60)
             }
 
             Section {
-                Toggle("本机被远程控制时", isOn: $pauseOnRemoteControlled)
-                TextField("远程被控进程名", text: $remoteHostProcesses, prompt: Text("UURemoteServer"))
+                Toggle("This Mac is being remote-controlled", isOn: $pauseOnRemoteControlled)
+                TextField("Remote host processes", text: $remoteHostProcesses, prompt: Text("UURemoteServer"))
                     .disabled(!pauseOnRemoteControlled)
-                Toggle("用本机远程控制其他设备时（客户端在前台）", isOn: $pauseOnRemoteControlling)
-                TextField("远程客户端 Bundle ID", text: $remoteClientBundleIDs, prompt: Text("com.netease.uuremote"))
+                Toggle("Remote-controlling another device (client in front)", isOn: $pauseOnRemoteControlling)
+                TextField("Remote client bundle IDs", text: $remoteClientBundleIDs, prompt: Text("com.netease.uuremote"))
                     .disabled(!pauseOnRemoteControlling)
-                Toggle("会议/通话时（麦克风或摄像头在用）", isOn: $pauseOnMeeting)
-                TextField("忽略的麦克风进程", text: $micIgnoredProcesses, prompt: Text("逗号分隔"))
+                Toggle("Meetings and calls (microphone or camera in use)", isOn: $pauseOnMeeting)
+                TextField("Ignored microphone processes", text: $micIgnoredProcesses, prompt: Text("Comma separated"))
                     .disabled(!pauseOnMeeting)
-                Toggle("播放视频时（有进程阻止显示器休眠）", isOn: $pauseOnVideo)
-                TextField("忽略的进程", text: $videoIgnoredProcesses, prompt: Text("逗号分隔"))
+                Toggle("Video playback (display sleep is blocked)", isOn: $pauseOnVideo)
+                TextField("Ignored processes", text: $videoIgnoredProcesses, prompt: Text("Comma separated"))
                     .disabled(!pauseOnVideo)
-                Toggle("前台应用全屏时", isOn: $pauseOnFullscreen)
-                TextField("以下应用在前台时暂停（Bundle ID）", text: $pauseApps, prompt: Text("com.apple.Keynote, ..."))
-                Stepper("暂停结束后至少再工作 \(Int(resumeCooldownSeconds)) 秒", value: $resumeCooldownSeconds, in: 0...600, step: 15)
+                Toggle("Fullscreen app in front", isOn: $pauseOnFullscreen)
+                TextField("Pause while these apps are in front (bundle IDs)", text: $pauseApps, prompt: Text("com.apple.Keynote, ..."))
+                Stepper("Wait at least \(Int(resumeCooldownSeconds)) s after a pause ends", value: $resumeCooldownSeconds, in: 0...600, step: 15)
             } header: {
-                Text("免打扰（智能暂停）")
+                Text("Smart Pause")
             } footer: {
-                Text("命中任一条件时暂停计时；正在显示的休息会立即收起。")
+                Text("Any matching condition pauses the timer and dismisses a break in progress.")
                     .foregroundStyle(.secondary)
             }
 
-            Section("当前状态") {
+            Section("Status") {
                 if status.reasons.isEmpty {
-                    Text("未暂停").foregroundStyle(.secondary)
+                    Text("Not paused").foregroundStyle(.secondary)
                 } else {
                     ForEach(status.reasons, id: \.self) { Text($0) }
                 }
-                Text(status.remoteSamples.isEmpty ? "未发现远程被控进程" : status.remoteSamples)
+                Text(status.remoteSamples.isEmpty ? "No remote host process found" : status.remoteSamples)
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
 
-            Section("通用") {
-                Toggle("登录时启动", isOn: $launchAtLogin)
+            Section("General") {
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in
                         do {
                             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }

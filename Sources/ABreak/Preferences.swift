@@ -32,6 +32,7 @@ enum Pref {
     static let dimForReminders = "dimForReminders"
     static let skipDelaySeconds = "skipDelaySeconds"
     static let menuBarTimerStyle = "menuBarTimerStyle"
+    static let language = "language"
 
     /// Defaults mirror the owner's LookAway setup: 45-min focus, 30-s short / 3-min long breaks,
     /// fullscreen pause off (LookAway has none; fullscreen video is covered by video detection),
@@ -66,6 +67,7 @@ enum Pref {
             dimForReminders: true,
             skipDelaySeconds: 3,
             menuBarTimerStyle: MenuBarTimerStyle.countdown.rawValue,
+            language: AppLanguage.system.rawValue,
         ])
     }
 

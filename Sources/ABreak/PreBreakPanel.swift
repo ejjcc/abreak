@@ -52,13 +52,13 @@ private struct PreBreakView: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "eye")
-            Text("Break in \(Int(model.remaining.rounded(.up)))s")
+            Text(tr("Break in \(Int(model.remaining.rounded(.up)))s", "\(Int(model.remaining.rounded(.up))) 秒后休息"))
                 .monospacedDigit()
             Spacer()
-            Button("Now") { model.onStart() }
-            Button("In 5 Min") { model.onPostpone() }
+            Button(tr("Now", "现在")) { model.onStart() }
+            Button(tr("In 5 Min", "5 分钟后")) { model.onPostpone() }
             if Pref.bool(Pref.allowSkip) {
-                Button("Skip") { model.onSkip() }
+                Button(tr("Skip", "跳过")) { model.onSkip() }
             }
         }
         .controlSize(.small)

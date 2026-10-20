@@ -189,3 +189,13 @@ private extension Scheduler {
     idle.run(5, idle: 120)
     #expect(MenuBarLabel(idle, style: .countdown) == MenuBarLabel(symbol: "moon.zzz", text: "01:40", dimmed: true))
 }
+
+@Test func languageResolution() {
+    #expect(AppLanguage.system.resolved(preferredLanguages: ["zh-Hans-CN", "en-US"]) == .chinese)
+    #expect(AppLanguage.system.resolved(preferredLanguages: ["zh-Hant-TW"]) == .chinese)
+    #expect(AppLanguage.system.resolved(preferredLanguages: ["en-US", "zh-Hans-CN"]) == .english)
+    #expect(AppLanguage.system.resolved(preferredLanguages: ["ja-JP"]) == .english)
+    #expect(AppLanguage.system.resolved(preferredLanguages: []) == .english)
+    #expect(AppLanguage.english.resolved(preferredLanguages: ["zh-Hans-CN"]) == .english)
+    #expect(AppLanguage.chinese.resolved(preferredLanguages: ["en-US"]) == .chinese)
+}

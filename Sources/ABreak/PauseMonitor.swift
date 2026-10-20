@@ -15,7 +15,9 @@ final class PauseMonitor {
 
         if let until = manualUntil {
             if until > now {
-                result.append(until == .distantFuture ? "Paused manually" : "Paused until \(until.formatted(date: .omitted, time: .shortened))")
+                result.append(until == .distantFuture
+                    ? tr("Paused manually", "手动暂停")
+                    : tr("Paused until \(until.formatted(date: .omitted, time: .shortened))", "暂停至 \(until.formatted(date: .omitted, time: .shortened))"))
             } else {
                 manualUntil = nil
             }
@@ -30,13 +32,13 @@ final class PauseMonitor {
         let frontID = front?.bundleIdentifier ?? ""
         let frontName = front?.localizedName ?? frontID
         if Pref.bool(Pref.pauseOnRemoteControlling), Pref.list(Pref.remoteClientBundleIDs).contains(frontID) {
-            result.append("Remote-controlling another device (\(frontName))")
+            result.append(tr("Remote-controlling another device (\(frontName))", "正在远程控制其他设备（\(frontName)）"))
         }
         if Pref.list(Pref.pauseApps).contains(frontID) {
-            result.append("Pause app in front (\(frontName))")
+            result.append(tr("Pause app in front (\(frontName))", "指定应用在前台（\(frontName)）"))
         }
         if Pref.bool(Pref.pauseOnFullscreen), MediaDetectors.frontmostIsFullscreen() {
-            result.append("Fullscreen app (\(frontName))")
+            result.append(tr("Fullscreen app (\(frontName))", "全屏应用（\(frontName)）"))
         }
         return result
     }
@@ -48,7 +50,8 @@ final class PauseMonitor {
             remote.processNames = Pref.list(Pref.remoteHostProcesses)
             if remote.poll(now: now) {
                 let names = Set(remote.lastSamples.filter(remote.rule.isActive).map(\.name)).sorted()
-                result.append("Being remote-controlled (\(names.isEmpty ? "holding" : names.joined(separator: ", ")))")
+                let who = names.isEmpty ? tr("holding", "保持中") : names.joined(separator: ", ")
+                result.append(tr("Being remote-controlled (\(who))", "本机被远程控制中（\(who)）"))
             }
         }
 
@@ -60,9 +63,10 @@ final class PauseMonitor {
                 .map(ProcessInspector.name(of:))
                 .filter { !ignored.contains($0) }
             if !mic.isEmpty {
-                result.append("Microphone in use (\(Set(mic).sorted().joined(separator: ", ")))")
+                let users = Set(mic).sorted().joined(separator: ", ")
+                result.append(tr("Microphone in use (\(users))", "麦克风使用中（\(users)）"))
             } else if MediaDetectors.isCameraInUse() {
-                result.append("Camera in use")
+                result.append(tr("Camera in use", "摄像头使用中"))
             }
         }
 
@@ -73,7 +77,8 @@ final class PauseMonitor {
                 assertions: ProcessInspector.powerAssertions()
             )
             if !holders.isEmpty {
-                result.append("Video playing (\(Set(holders).sorted().joined(separator: ", ")))")
+                let players = Set(holders).sorted().joined(separator: ", ")
+                result.append(tr("Video playing (\(players))", "视频播放中（\(players)）"))
             }
         }
         return result

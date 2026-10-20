@@ -16,6 +16,7 @@ Inspired by [LookAway](https://lookaway.app). ABreak is an independent project, 
   - video is playing (some app keeps the display awake)
   - an app from your list is in front, or (opt-in) any fullscreen app is in front
 - Idle detection: stepping away pauses the timer; a long absence counts as a break
+- English and Simplified Chinese UI: follows the macOS language by default, switchable under **Settings → General → Language**
 - **No permissions required**: no Screen Recording, Accessibility, or Microphone access
 
 Requires macOS 14.2 or later (Apple silicon or Intel).
@@ -72,7 +73,7 @@ For other tools, add their host process name under **Settings → Smart Pause �
 scripts/test.sh                                  # unit tests (swift-testing)
 scripts/build-app.sh                             # -> build/ABreak.app
 UNIVERSAL=1 VERSION=1.2.3 scripts/build-app.sh --zip
-ABreak --preview posture|break                   # show a component right away
+ABreak --preview posture|break|settings          # show a component right away
 ```
 
 Pushing a `v*` tag builds a universal app and publishes a GitHub release.

@@ -95,6 +95,8 @@ private final class OverlayWindow: NSWindow {
 
 private struct BreakView: View {
     @ObservedObject var model: BreakModel
+    /// Re-renders when the UI language changes.
+    @AppStorage(Pref.language) private var language = AppLanguage.system.rawValue
 
     /// Vertical centers as fractions of screen height, measured from LookAway frames (3024x1964 @2x).
     private enum Y {
@@ -133,7 +135,7 @@ private struct BreakView: View {
                 .position(x: x, y: h * Y.clock)
 
                 if model.long {
-                    Text("Long Break")
+                    Text(tr("Long Break", "长休息"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.7))
                         .padding(.horizontal, 12)
@@ -142,11 +144,13 @@ private struct BreakView: View {
                         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.white.opacity(0.12)))
                         .position(x: x, y: h * y.tag)
                 }
-                Text(model.long ? "Time for a longer break" : "Rest your eyes")
+                Text(model.long ? tr("Time for a longer break", "让眼睛好好休息") : tr("Rest your eyes", "休息一下眼睛"))
                     .font(.system(size: 54, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .position(x: x, y: h * y.title)
-                Text(model.long ? "Step away, stretch, and look into the distance" : "Look at something far away and let your eyes relax")
+                Text(model.long
+                    ? tr("Step away, stretch, and look into the distance", "离开屏幕，伸展一下，看向远处")
+                    : tr("Look at something far away and let your eyes relax", "看向远处，让眼睛放松片刻"))
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(.white.opacity(0.75))
                     .position(x: x, y: h * y.subtitle)
@@ -165,14 +169,14 @@ private struct BreakView: View {
                 HStack(spacing: 12) {
                     if model.allowSkip {
                         Button(action: model.onSkip) {
-                            Label(model.canSkip ? "Skip Break" : "Skip in \(model.skipWait)s",
+                            Label(model.canSkip ? tr("Skip Break", "跳过休息") : tr("Skip in \(model.skipWait)s", "\(model.skipWait) 秒后可跳过"),
                                   systemImage: model.canSkip ? "chevron.right.2" : "hourglass")
                                 .frame(width: 118)
                         }
                         .disabled(!model.canSkip)
                     }
                     Button(action: model.lockScreen) {
-                        Label("Lock Screen", systemImage: "lock")
+                        Label(tr("Lock Screen", "锁定屏幕"), systemImage: "lock")
                             .frame(width: 113)
                     }
                 }
@@ -181,13 +185,13 @@ private struct BreakView: View {
 
                 if model.allowSkip {
                     HStack(spacing: 6) {
-                        Text("Press")
+                        Text(tr("Press", "连按两次"))
                         Text("Esc")
                             .font(.system(size: 11, weight: .semibold))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(RoundedRectangle(cornerRadius: 4).fill(.white.opacity(0.12)))
-                        Text("twice to skip")
+                        Text(tr("twice to skip", "跳过休息"))
                     }
                     .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.45))

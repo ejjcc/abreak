@@ -41,90 +41,100 @@ struct SettingsView: View {
     @AppStorage(Pref.dimForReminders) private var dimForReminders = true
     @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 3.0
     @AppStorage(Pref.menuBarTimerStyle) private var menuBarTimerStyle = MenuBarTimerStyle.countdown.rawValue
+    @AppStorage(Pref.language) private var language = AppLanguage.system.rawValue
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
-    private static let positions = ["Top Left", "Top", "Top Right", "Left", "Center", "Right", "Bottom Left", "Bottom", "Bottom Right"]
+    private var positions: [String] {
+        [tr("Top Left", "左上"), tr("Top", "上方"), tr("Top Right", "右上"),
+         tr("Left", "左侧"), tr("Center", "中央"), tr("Right", "右侧"),
+         tr("Bottom Left", "左下"), tr("Bottom", "下方"), tr("Bottom Right", "右下")]
+    }
 
     var body: some View {
         Form {
-            Section("Breaks") {
-                Stepper("Break every \(Int(workMinutes)) min", value: $workMinutes, in: 1...120)
-                Stepper("Short break: \(Int(breakSeconds)) s", value: $breakSeconds, in: 5...300, step: 5)
-                Stepper(longBreakEvery == 0 ? "No long breaks" : "Long break every \(longBreakEvery) breaks", value: $longBreakEvery, in: 0...10)
-                Stepper("Long break: \(Int(longBreakMinutes)) min", value: $longBreakMinutes, in: 1...30)
+            Section(tr("Breaks", "休息")) {
+                Stepper(tr("Break every \(Int(workMinutes)) min", "每 \(Int(workMinutes)) 分钟休息一次"), value: $workMinutes, in: 1...120)
+                Stepper(tr("Short break: \(Int(breakSeconds)) s", "短休息：\(Int(breakSeconds)) 秒"), value: $breakSeconds, in: 5...300, step: 5)
+                Stepper(longBreakEvery == 0 ? tr("No long breaks", "不安排长休息") : tr("Long break every \(longBreakEvery) breaks", "每 \(longBreakEvery) 次休息安排一次长休息"), value: $longBreakEvery, in: 0...10)
+                Stepper(tr("Long break: \(Int(longBreakMinutes)) min", "长休息：\(Int(longBreakMinutes)) 分钟"), value: $longBreakMinutes, in: 1...30)
                     .disabled(longBreakEvery == 0)
-                Stepper("Heads-up \(Int(preBreakSeconds)) s before a break", value: $preBreakSeconds, in: 0...60, step: 5)
-                Toggle("Allow skipping breaks", isOn: $allowSkip)
-                Stepper("Skip button enabled after \(Int(skipDelaySeconds)) s (double Esc skips anytime)", value: $skipDelaySeconds, in: 0...30)
+                Stepper(tr("Heads-up \(Int(preBreakSeconds)) s before a break", "休息前 \(Int(preBreakSeconds)) 秒提醒"), value: $preBreakSeconds, in: 0...60, step: 5)
+                Toggle(tr("Allow skipping breaks", "允许跳过休息"), isOn: $allowSkip)
+                Stepper(tr("Skip button enabled after \(Int(skipDelaySeconds)) s (double Esc skips anytime)", "跳过按钮 \(Int(skipDelaySeconds)) 秒后可用（连按两次 Esc 随时跳过）"), value: $skipDelaySeconds, in: 0...30)
                     .disabled(!allowSkip)
-                Toggle("Play a sound when a break ends", isOn: $playSounds)
+                Toggle(tr("Play a sound when a break ends", "休息结束时播放提示音"), isOn: $playSounds)
             }
 
-            Section("Posture Reminder") {
-                Toggle("Remind me to sit upright", isOn: $postureEnabled)
+            Section(tr("Posture Reminder", "坐姿提醒")) {
+                Toggle(tr("Remind me to sit upright", "定时提醒坐直"), isOn: $postureEnabled)
                 Group {
-                    Stepper("Every \(Int(postureMinutes)) min", value: $postureMinutes, in: 5...120, step: 5)
-                    Picker("Size", selection: $postureSize) {
-                        Text("Small").tag(0)
-                        Text("Medium").tag(1)
-                        Text("Large").tag(2)
+                    Stepper(tr("Every \(Int(postureMinutes)) min", "每 \(Int(postureMinutes)) 分钟一次"), value: $postureMinutes, in: 5...120, step: 5)
+                    Picker(tr("Size", "大小"), selection: $postureSize) {
+                        Text(tr("Small", "小")).tag(0)
+                        Text(tr("Medium", "中")).tag(1)
+                        Text(tr("Large", "大")).tag(2)
                     }
-                    Picker("Position", selection: $posturePosition) {
-                        ForEach(Array(Self.positions.enumerated()), id: \.offset) { Text($0.element).tag($0.offset) }
+                    Picker(tr("Position", "位置"), selection: $posturePosition) {
+                        ForEach(Array(positions.enumerated()), id: \.offset) { Text($0.element).tag($0.offset) }
                     }
-                    Toggle("Dim the screen", isOn: $dimForReminders)
-                    Toggle("Sound", isOn: $postureSound)
+                    Toggle(tr("Dim the screen", "提醒时调暗屏幕"), isOn: $dimForReminders)
+                    Toggle(tr("Sound", "提示音"), isOn: $postureSound)
                 }
                 .disabled(!postureEnabled)
             }
 
-            Section("Idle") {
-                Stepper("Pause timer after \(Int(idlePauseSeconds)) s idle", value: $idlePauseSeconds, in: 10...600, step: 10)
-                Stepper("Count \(Int(idleResetMinutes)) min idle as a break", value: $idleResetMinutes, in: 1...60)
+            Section(tr("Idle", "离开检测")) {
+                Stepper(tr("Pause timer after \(Int(idlePauseSeconds)) s idle", "无操作 \(Int(idlePauseSeconds)) 秒后暂停计时"), value: $idlePauseSeconds, in: 10...600, step: 10)
+                Stepper(tr("Count \(Int(idleResetMinutes)) min idle as a break", "无操作 \(Int(idleResetMinutes)) 分钟视为已休息"), value: $idleResetMinutes, in: 1...60)
             }
 
             Section {
-                Toggle("This Mac is being remote-controlled", isOn: $pauseOnRemoteControlled)
-                TextField("Remote host processes", text: $remoteHostProcesses, prompt: Text("UURemoteServer"))
+                Toggle(tr("This Mac is being remote-controlled", "本机被远程控制时"), isOn: $pauseOnRemoteControlled)
+                TextField(tr("Remote host processes", "远程被控进程名"), text: $remoteHostProcesses, prompt: Text("UURemoteServer"))
                     .disabled(!pauseOnRemoteControlled)
-                Toggle("Remote-controlling another device (client in front)", isOn: $pauseOnRemoteControlling)
-                TextField("Remote client bundle IDs", text: $remoteClientBundleIDs, prompt: Text("com.netease.uuremote"))
+                Toggle(tr("Remote-controlling another device (client in front)", "远程控制其他设备时（客户端在前台）"), isOn: $pauseOnRemoteControlling)
+                TextField(tr("Remote client bundle IDs", "远程客户端 Bundle ID"), text: $remoteClientBundleIDs, prompt: Text("com.netease.uuremote"))
                     .disabled(!pauseOnRemoteControlling)
-                Toggle("Meetings and calls (microphone or camera in use)", isOn: $pauseOnMeeting)
-                TextField("Ignored microphone processes", text: $micIgnoredProcesses, prompt: Text("Comma separated"))
+                Toggle(tr("Meetings and calls (microphone or camera in use)", "会议和通话（麦克风或摄像头在用）"), isOn: $pauseOnMeeting)
+                TextField(tr("Ignored microphone processes", "忽略的麦克风进程"), text: $micIgnoredProcesses, prompt: Text(tr("Comma separated", "逗号分隔")))
                     .disabled(!pauseOnMeeting)
-                Toggle("Video playback (display sleep is blocked)", isOn: $pauseOnVideo)
-                TextField("Ignored processes", text: $videoIgnoredProcesses, prompt: Text("Comma separated"))
+                Toggle(tr("Video playback (display sleep is blocked)", "视频播放（有进程阻止显示器休眠）"), isOn: $pauseOnVideo)
+                TextField(tr("Ignored processes", "忽略的进程"), text: $videoIgnoredProcesses, prompt: Text(tr("Comma separated", "逗号分隔")))
                     .disabled(!pauseOnVideo)
-                Toggle("Fullscreen app in front", isOn: $pauseOnFullscreen)
-                TextField("Pause while these apps are in front (bundle IDs)", text: $pauseApps, prompt: Text("com.apple.Keynote, ..."))
-                Stepper("Wait at least \(Int(resumeCooldownSeconds)) s after a pause ends", value: $resumeCooldownSeconds, in: 0...600, step: 15)
+                Toggle(tr("Fullscreen app in front", "前台应用全屏时"), isOn: $pauseOnFullscreen)
+                TextField(tr("Pause while these apps are in front (bundle IDs)", "以下应用在前台时暂停（Bundle ID）"), text: $pauseApps, prompt: Text("com.apple.Keynote, ..."))
+                Stepper(tr("Wait at least \(Int(resumeCooldownSeconds)) s after a pause ends", "暂停结束后至少再工作 \(Int(resumeCooldownSeconds)) 秒"), value: $resumeCooldownSeconds, in: 0...600, step: 15)
             } header: {
-                Text("Smart Pause")
+                Text(tr("Smart Pause", "智能暂停"))
             } footer: {
-                Text("Any matching condition pauses the timer and dismisses a break in progress.")
+                Text(tr("Any matching condition pauses the timer and dismisses a break in progress.", "命中任一条件时暂停计时，并立即收起正在显示的休息。"))
                     .foregroundStyle(.secondary)
             }
 
-            Section("Status") {
+            Section(tr("Status", "当前状态")) {
                 if status.reasons.isEmpty {
-                    Text("Not paused").foregroundStyle(.secondary)
+                    Text(tr("Not paused", "未暂停")).foregroundStyle(.secondary)
                 } else {
                     ForEach(status.reasons, id: \.self) { Text($0) }
                 }
-                Text(status.remoteSamples.isEmpty ? "No remote host process found" : status.remoteSamples)
+                Text(status.remoteSamples.isEmpty ? tr("No remote host process found", "未发现远程被控进程") : status.remoteSamples)
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
 
-            Section("General") {
-                Picker("Menu bar timer", selection: $menuBarTimerStyle) {
-                    Text("Countdown (44:59)").tag(MenuBarTimerStyle.countdown.rawValue)
-                    Text("Minutes (45m)").tag(MenuBarTimerStyle.minutes.rawValue)
-                    Text("Icon only").tag(MenuBarTimerStyle.iconOnly.rawValue)
+            Section(tr("General", "通用")) {
+                Picker(tr("Language", "语言"), selection: $language) {
+                    Text(tr("Follow System", "跟随系统")).tag(AppLanguage.system.rawValue)
+                    Text("English").tag(AppLanguage.english.rawValue)
+                    Text("简体中文").tag(AppLanguage.chinese.rawValue)
                 }
-                Toggle("Launch at login", isOn: $launchAtLogin)
+                Picker(tr("Menu bar timer", "菜单栏计时"), selection: $menuBarTimerStyle) {
+                    Text(tr("Countdown (44:59)", "倒计时（44:59）")).tag(MenuBarTimerStyle.countdown.rawValue)
+                    Text(tr("Minutes (45m)", "分钟（45m）")).tag(MenuBarTimerStyle.minutes.rawValue)
+                    Text(tr("Icon only", "仅图标")).tag(MenuBarTimerStyle.iconOnly.rawValue)
+                }
+                Toggle(tr("Launch at login", "登录时启动"), isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in
                         do {
                             if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }

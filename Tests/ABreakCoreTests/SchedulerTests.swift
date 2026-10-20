@@ -158,3 +158,10 @@ private extension Scheduler {
     #expect(DurationFormat.clock(27) == "00:27")
     #expect(DurationFormat.clock(176.4) == "02:57")
 }
+
+@Test func doublePressWithinWindow() {
+    var d = DoublePress(window: 1)
+    let t0 = Date(timeIntervalSince1970: 0)
+    let fired = [0, 0.4, 0.6, 2, 2.9].map { d.press(at: t0 + $0) }
+    #expect(fired == [false, true, false, false, true])
+}

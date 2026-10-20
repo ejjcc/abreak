@@ -77,15 +77,13 @@ final class BreakOverlay {
 
 private final class OverlayWindow: NSWindow {
     var onDoubleEscape: () -> Void = {}
-    private var lastEscape = Date.distantPast
+    private var escape = DoublePress()
 
     override var canBecomeKey: Bool { true }
 
     override func keyDown(with event: NSEvent) {
         guard event.keyCode == 53 else { return }
-        let now = Date()
-        if now.timeIntervalSince(lastEscape) < 1 { onDoubleEscape() }
-        lastEscape = now
+        if escape.press(at: Date()) { onDoubleEscape() }
     }
 }
 
@@ -97,8 +95,8 @@ private struct BreakView: View {
         static let clock = 0.084
         static let buttons = 0.893
         static let hint = 0.937
-        static let short = (title: 0.382, subtitle: 0.450, divider: 0.504, countdown: 0.570)
-        static let long = (tag: 0.330, title: 0.412, subtitle: 0.479, divider: 0.533, countdown: 0.599)
+        static let short = (title: 0.3764, subtitle: 0.450, divider: 0.504, countdown: 0.570)
+        static let long = (tag: 0.330, title: 0.4064, subtitle: 0.479, divider: 0.533, countdown: 0.599)
     }
 
     /// Background gray levels sampled top to bottom at 0, 25, 50, 75, 100% height.

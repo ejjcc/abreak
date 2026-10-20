@@ -46,12 +46,12 @@ final class PostureReminder {
 
 private struct PostureFrame {
     var dim = 0.0
+    /// Top of the pill (head, where the circle sits) and its bottom (tail), in widths below
+    /// the circle's final top edge. Head leads upward, tail follows: a swipe-up gesture.
+    var head = PostureView.startHead
+    var tail = PostureView.startTail
     var outerScale = 0.2
     var outerOpacity = 0.0
-    /// Extra pill length below the circle, as a fraction of the width.
-    var stretch = 0.0
-    /// Vertical lift, as a fraction of the width.
-    var lift = 0.0
     var innerScale = 0.0
     var innerOpacity = 0.0
 }
@@ -62,7 +62,13 @@ private struct PostureView: View {
     let dim: Bool
     @State private var trigger = false
 
-    private static let maxStretch = 1.2
+    /// Geometry in widths, from LookAway frames: the stretched pill is ~2.2 widths tall and its
+    /// head sits ~0.4 widths below where the circle finally rests.
+    static let stretchedHead = 0.4
+    static let span = stretchedHead + 2.22
+    /// The figure appears as a circle at the bottom of the future pill.
+    static let startHead = span - 1
+    static let startTail = span
 
     var body: some View {
         KeyframeAnimator(initialValue: PostureFrame(), trigger: trigger) { f in
@@ -86,9 +92,21 @@ private struct PostureView: View {
                 LinearKeyframe(1, duration: 2.5)
                 LinearKeyframe(0, duration: 0.4)
             }
+            // 0-0.3 s appear as a circle; 0.3-0.85 s head shoots up, tail stays (pill stretches up);
+            // 1.25-1.8 s tail catches up while the head settles a little higher (pill collapses upward).
+            KeyframeTrack(\.head) {
+                LinearKeyframe(Self.startHead, duration: 0.3)
+                SpringKeyframe(Self.stretchedHead, duration: 0.55, spring: .snappy)
+                LinearKeyframe(Self.stretchedHead, duration: 0.4)
+                SpringKeyframe(0, duration: 0.55, spring: .smooth)
+            }
+            KeyframeTrack(\.tail) {
+                LinearKeyframe(Self.startTail, duration: 1.25)
+                SpringKeyframe(1, duration: 0.55, spring: .snappy)
+            }
             KeyframeTrack(\.outerScale) {
-                SpringKeyframe(1, duration: 0.45, spring: .bouncy)
-                LinearKeyframe(1, duration: 2.15)
+                SpringKeyframe(1, duration: 0.3, spring: .bouncy)
+                LinearKeyframe(1, duration: 2.3)
                 CubicKeyframe(0.05, duration: 0.4)
             }
             KeyframeTrack(\.outerOpacity) {
@@ -96,26 +114,16 @@ private struct PostureView: View {
                 LinearKeyframe(1, duration: 2.6)
                 LinearKeyframe(0, duration: 0.2)
             }
-            KeyframeTrack(\.stretch) {
-                LinearKeyframe(0, duration: 0.45)
-                SpringKeyframe(Self.maxStretch, duration: 0.5, spring: .smooth)
-                LinearKeyframe(Self.maxStretch, duration: 0.85)
-                SpringKeyframe(0, duration: 0.5, spring: .snappy)
-            }
-            KeyframeTrack(\.lift) {
-                LinearKeyframe(0, duration: 1.8)
-                SpringKeyframe(0.4, duration: 0.5, spring: .snappy)
-            }
             KeyframeTrack(\.innerScale) {
-                LinearKeyframe(0, duration: 0.2)
-                SpringKeyframe(1, duration: 0.45, spring: .bouncy)
-                LinearKeyframe(1, duration: 1.65)
+                LinearKeyframe(0, duration: 0.1)
+                SpringKeyframe(1, duration: 0.35, spring: .bouncy)
+                LinearKeyframe(1, duration: 1.85)
                 CubicKeyframe(0.3, duration: 0.4)
             }
             KeyframeTrack(\.innerOpacity) {
-                LinearKeyframe(0, duration: 0.2)
-                LinearKeyframe(1, duration: 0.25)
-                LinearKeyframe(1, duration: 1.85)
+                LinearKeyframe(0, duration: 0.1)
+                LinearKeyframe(1, duration: 0.2)
+                LinearKeyframe(1, duration: 2.0)
                 LinearKeyframe(0, duration: 0.4)
             }
         }
@@ -124,12 +132,18 @@ private struct PostureView: View {
 
     private func figure(_ f: PostureFrame) -> some View {
         let inner = width * 0.8
+        let top = f.head * width
+        let length = max(f.tail - f.head, 1) * width
+        let box = Self.span * width
+        // Scale around the circle so appearing/vanishing happens where the circle is.
+        let anchor = UnitPoint(x: 0.5, y: (top + width / 2) / box)
         return ZStack(alignment: .top) {
             Capsule()
                 .fill(Color(white: 0.95))
                 .overlay(Capsule().strokeBorder(.white.opacity(0.9), lineWidth: 1))
                 .shadow(color: .black.opacity(0.19), radius: width * 0.18, y: width * 0.05)
-                .frame(width: width, height: width * (1 + f.stretch))
+                .frame(width: width, height: length)
+                .offset(y: top)
             Circle()
                 .fill(LinearGradient(
                     colors: [Color(red: 1.0, green: 0.573, blue: 0.22), Color(red: 0.95, green: 0.38, blue: 0.55), Color(red: 0.902, green: 0.302, blue: 0.808)],
@@ -142,25 +156,24 @@ private struct PostureView: View {
                         .foregroundStyle(Color(white: 0.12))
                 )
                 .frame(width: inner, height: inner)
-                .padding(.top, (width - inner) / 2)
                 .scaleEffect(f.innerScale)
                 .opacity(f.innerOpacity)
+                .offset(y: top + (width - inner) / 2)
         }
-        .scaleEffect(f.outerScale, anchor: .top)
+        .frame(width: width, height: box, alignment: .top)
+        .scaleEffect(f.outerScale, anchor: anchor)
         .opacity(f.outerOpacity)
-        // Keep the circle fixed while the pill grows downward; lift moves the whole figure up.
-        .frame(width: width, height: width * (1 + Self.maxStretch), alignment: .top)
-        .offset(y: -f.lift * width)
     }
 
-    /// 3x3 grid position; the figure's full (stretched) box is centered on the anchor.
-    /// The middle row sits above true center: LookAway's stretched pill tops out at ~27% of screen height.
+    /// 3x3 grid position of the figure's box (final circle top to the stretched pill's bottom).
+    /// Middle row: the stretched pill's top sits at ~27% of screen height, as measured on LookAway.
     private func anchor(in size: CGSize) -> CGPoint {
-        let margin = width * 1.4
+        let margin = width * 0.6
+        let box = Self.span * width
         let col = CGFloat(position % 3), row = position / 3
-        let x = margin + (size.width - 2 * margin) * col / 2
-        let middleY = size.height * 0.272 + width * (1 + Self.maxStretch) / 2
-        let y = [margin, middleY, size.height - margin][row]
-        return CGPoint(x: x, y: y)
+        let x = width + (size.width - 2 * width) * col / 2
+        let middleTop = size.height * 0.272 - Self.stretchedHead * width
+        let top = [margin, middleTop, size.height - margin - box][row]
+        return CGPoint(x: x, y: top + box / 2)
     }
 }

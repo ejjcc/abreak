@@ -12,6 +12,7 @@ final class BreakModel: ObservableObject {
     var onSkip: () -> Void = {}
 
     var canSkip: Bool { allowSkip && total - remaining >= skipDelay }
+    var skipWait: Int { max(1, Int((skipDelay - (total - remaining)).rounded(.up))) }
 
     func lockScreen() {
         ScreenLock.lock()
@@ -63,9 +64,14 @@ final class BreakOverlay {
         model.remaining = max(0, remaining)
     }
 
-    func hide() {
+    /// Fades out after a completed break; closes instantly when skipped or cancelled so nothing lingers.
+    func hide(animated: Bool) {
         let closing = windows
         windows = []
+        guard animated else {
+            closing.forEach { $0.orderOut(nil) }
+            return
+        }
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.4
             closing.forEach { $0.animator().alphaValue = 0 }
@@ -159,7 +165,7 @@ private struct BreakView: View {
                 HStack(spacing: 12) {
                     if model.allowSkip {
                         Button(action: model.onSkip) {
-                            Label(model.canSkip ? "Skip Break" : "Skip available soon",
+                            Label(model.canSkip ? "Skip Break" : "Skip in \(model.skipWait)s",
                                   systemImage: model.canSkip ? "chevron.right.2" : "hourglass")
                                 .frame(width: 118)
                         }

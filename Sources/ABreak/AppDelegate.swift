@@ -106,7 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switch scheduler.phase {
         case .working:
             preBreak.hide()
-            if overlay.isVisible { overlay.hide() }
+            if overlay.isVisible { overlay.hide(animated: scheduler.completedBreaks > before.completedBreaks) }
         case .preBreak:
             preBreak.show(remaining: scheduler.workRemaining)
             preBreak.update(remaining: scheduler.workRemaining)

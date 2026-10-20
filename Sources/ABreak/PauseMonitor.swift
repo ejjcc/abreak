@@ -67,8 +67,9 @@ final class PauseMonitor {
         }
 
         if Pref.bool(Pref.pauseOnVideo) {
+            // Remote hosts keep the display awake during a session; that is the remote rule's job, not video.
             let holders = MediaDetectors.displaySleepHolders(
-                ignoring: Pref.list(Pref.videoIgnoredProcesses),
+                ignoring: Pref.list(Pref.videoIgnoredProcesses).union(Pref.list(Pref.remoteHostProcesses)),
                 assertions: ProcessInspector.powerAssertions()
             )
             if !holders.isEmpty {

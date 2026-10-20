@@ -29,7 +29,16 @@ Requires macOS 14.2 or later (Apple silicon or Intel).
    - macOS 14: right-click `ABreak.app` → **Open** → **Open**.
    - Or from Terminal: `xattr -dr com.apple.quarantine /Applications/ABreak.app`
 
-ABreak lives in the menu bar (eye icon with the time to the next break). Open **Settings…** from its menu to adjust intervals and smart pause, and turn on **Launch at login** there.
+ABreak lives in the menu bar with a live countdown:
+
+| Menu bar | Meaning |
+|---|---|
+| eye `44:59` | working, time to the next break |
+| crossed eye `00:24` | on a break, time left |
+| pause `44:59` (dimmed time) | smart or manual pause; the time is frozen and resumes when the pause ends (hover for the reason) |
+| moon `44:59` (dimmed time) | you are away; the timer waits |
+
+Open **Settings…** from its menu to adjust intervals and smart pause, switch the menu bar timer between `44:59`, `45m`, or icon only, and turn on **Launch at login**.
 
 ### Build from source
 

@@ -165,3 +165,27 @@ private extension Scheduler {
     let fired = [0, 0.4, 0.6, 2, 2.9].map { d.press(at: t0 + $0) }
     #expect(fired == [false, true, false, false, true])
 }
+
+@Test func menuBarLabelShowsCountdownInEveryState() {
+    var s = Scheduler(config: config())
+    s.run(1)
+    #expect(MenuBarLabel(s, style: .countdown) == MenuBarLabel(symbol: "eye", text: "01:39", dimmed: false))
+    #expect(MenuBarLabel(s, style: .minutes).text == "2m")
+    #expect(MenuBarLabel(s, style: .iconOnly).text == "")
+
+    // Paused: time is kept and frozen, icon explains why it is not moving.
+    s.run(30, reasons: ["Being remote-controlled"])
+    #expect(MenuBarLabel(s, style: .countdown) == MenuBarLabel(symbol: "pause.circle", text: "01:39", dimmed: true))
+
+    // Resumes counting from the frozen value.
+    s.run(2)
+    #expect(MenuBarLabel(s, style: .countdown) == MenuBarLabel(symbol: "eye", text: "01:37", dimmed: false))
+
+    s.startBreak()
+    s.run(3)
+    #expect(MenuBarLabel(s, style: .countdown) == MenuBarLabel(symbol: "eye.slash", text: "00:07", dimmed: false))
+
+    var idle = Scheduler(config: config())
+    idle.run(5, idle: 120)
+    #expect(MenuBarLabel(idle, style: .countdown) == MenuBarLabel(symbol: "moon.zzz", text: "01:40", dimmed: true))
+}

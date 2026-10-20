@@ -53,6 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             default: break
             }
         }
+        // `--snapshot-menubar <png>`: write the status item's rendering after a few seconds, for UI checks.
+        if let i = CommandLine.arguments.firstIndex(of: "--snapshot-menubar"), i + 1 < CommandLine.arguments.count {
+            let path = CommandLine.arguments[i + 1]
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+                MainActor.assumeIsolated { self?.snapshotStatusItem(to: path) }
+            }
+        }
         // Common modes keep the timer running while the status menu is open.
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
@@ -130,25 +137,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func render() {
         guard let button = statusItem.button else { return }
-        let symbol: String
-        let title: String
-        switch scheduler.phase {
-        case _ where scheduler.isPaused:
-            symbol = "pause.circle"
-            title = ""
-        case .onBreak:
-            symbol = "eye.slash"
-            title = " " + DurationFormat.compact(scheduler.breakRemaining)
-        default:
-            symbol = scheduler.isIdle ? "moon.zzz" : "eye"
-            title = " " + DurationFormat.compact(scheduler.workRemaining)
-        }
-        button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "ABreak")
-        button.title = title
-        button.toolTip = scheduler.isPaused ? scheduler.pauseReasons.joined(separator: "\n") : nil
+        let style = MenuBarTimerStyle(rawValue: UserDefaults.standard.integer(forKey: Pref.menuBarTimerStyle)) ?? .countdown
+        let label = MenuBarLabel(scheduler, style: style)
+        let image = NSImage(systemSymbolName: label.symbol, accessibilityDescription: "ABreak")
+        image?.isTemplate = true
+        button.image = image
+        button.imagePosition = label.text.isEmpty ? .imageOnly : .imageLeading
+        button.attributedTitle = NSAttributedString(
+            string: label.text.isEmpty ? "" : " " + label.text,
+            attributes: [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .medium),
+                .foregroundColor: label.dimmed ? NSColor.secondaryLabelColor : NSColor.labelColor,
+            ]
+        )
+        button.toolTip = scheduler.isPaused
+            ? "Paused: " + scheduler.pauseReasons.joined(separator: "; ")
+            : scheduler.isIdle ? "Paused while you are away" : nil
 
         status.reasons = scheduler.pauseReasons
         status.remoteSamples = remoteSummary()
+    }
+
+    private func snapshotStatusItem(to path: String) {
+        guard let button = statusItem.button,
+              let rep = button.bitmapImageRepForCachingDisplay(in: button.bounds) else { return }
+        button.cacheDisplay(in: button.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+        Log.write("menubar snapshot \(path): \(button.attributedTitle.string) width=\(button.bounds.width)")
     }
 
     private func remoteSummary() -> String {
@@ -162,7 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let header: String
         if scheduler.isPaused {
-            header = "Paused"
+            header = "Paused · break in \(DurationFormat.clock(scheduler.workRemaining))"
         } else if case .onBreak = scheduler.phase {
             header = "On break, \(DurationFormat.clock(scheduler.breakRemaining)) left"
         } else {

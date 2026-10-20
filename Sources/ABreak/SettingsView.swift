@@ -1,3 +1,4 @@
+import ABreakCore
 import ServiceManagement
 import SwiftUI
 
@@ -39,6 +40,7 @@ struct SettingsView: View {
     @AppStorage(Pref.postureSound) private var postureSound = true
     @AppStorage(Pref.dimForReminders) private var dimForReminders = true
     @AppStorage(Pref.skipDelaySeconds) private var skipDelaySeconds = 3.0
+    @AppStorage(Pref.menuBarTimerStyle) private var menuBarTimerStyle = MenuBarTimerStyle.countdown.rawValue
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private static let positions = ["Top Left", "Top", "Top Right", "Left", "Center", "Right", "Bottom Left", "Bottom", "Bottom Right"]
@@ -117,6 +119,11 @@ struct SettingsView: View {
             }
 
             Section("General") {
+                Picker("Menu bar timer", selection: $menuBarTimerStyle) {
+                    Text("Countdown (44:59)").tag(MenuBarTimerStyle.countdown.rawValue)
+                    Text("Minutes (45m)").tag(MenuBarTimerStyle.minutes.rawValue)
+                    Text("Icon only").tag(MenuBarTimerStyle.iconOnly.rawValue)
+                }
                 Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, on in
                         do {

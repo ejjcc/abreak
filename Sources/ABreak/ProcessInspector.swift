@@ -26,7 +26,7 @@ enum ProcessInspector {
         }
     }
 
-    /// Counts established TCP connections and open UDP sockets.
+    /// Counts network sockets; local proxy/IPC connections are not remote-session evidence.
     static func sockets(of pid: pid_t) -> (tcpEstablished: Int, udp: Int) {
         let stride = MemoryLayout<proc_fdinfo>.stride
         let size = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, nil, 0)
@@ -42,14 +42,25 @@ enum ProcessInspector {
             guard proc_pidfdinfo(pid, fd.proc_fd, PROC_PIDFDSOCKETINFO, &si, len) == len else { continue }
             switch Int(si.psi.soi_kind) {
             case Int(SOCKINFO_TCP):
-                if si.psi.soi_proto.pri_tcp.tcpsi_state == TSI_S_ESTABLISHED { tcp += 1 }
+                if si.psi.soi_proto.pri_tcp.tcpsi_state == TSI_S_ESTABLISHED,
+                   !hasLoopbackPeer(si.psi.soi_proto.pri_tcp.tcpsi_ini) { tcp += 1 }
             case Int(SOCKINFO_IN):
-                if si.psi.soi_protocol == IPPROTO_UDP { udp += 1 }
+                if si.psi.soi_protocol == IPPROTO_UDP,
+                   !hasLoopbackPeer(si.psi.soi_proto.pri_in) { udp += 1 }
             default:
                 break
             }
         }
         return (tcp, udp)
+    }
+
+    private static func hasLoopbackPeer(_ info: in_sockinfo) -> Bool {
+        if info.insi_vflag & UInt8(INI_IPV4) != 0 {
+            var address = info.insi_faddr.ina_46.i46a_addr4
+            return withUnsafeBytes(of: &address) { SocketPeer.isLoopback(Array($0)) }
+        }
+        var address = info.insi_faddr.ina_6
+        return withUnsafeBytes(of: &address) { SocketPeer.isLoopback(Array($0)) }
     }
 
     private static let timebase: mach_timebase_info_data_t = {

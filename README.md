@@ -53,7 +53,7 @@ scripts/build-app.sh --install    # builds, copies to /Applications, launches
 
 ## Remote-control detection
 
-Remote desktop tools keep their host process running all the time, so "process is running" says nothing. ABreak watches the host process (`UURemoteServer` by default) and treats a session as live when it opens media connections (≥2 established TCP or any UDP socket), uses ≥3% CPU, or holds a display-sleep assertion. Two consecutive hits (about 4 s) start the pause; it ends 20 s after the last hit.
+Remote desktop tools keep their host process running all the time, so "process is running" says nothing. ABreak watches the host process (`UURemoteServer` by default) and treats a session as live when it opens media connections (≥2 established TCP or any UDP socket), uses ≥3% CPU, or holds an active display-sleep assertion. Loopback connections to local proxies or IPC services are excluded from the socket count. Two consecutive hits (about 4 s) start the pause; it ends 20 s after the last hit.
 
 For other tools, add their host process name under **Settings → Smart Pause → Remote host processes**. To check what ABreak sees during a session:
 

@@ -13,7 +13,7 @@ Inspired by [LookAway](https://lookaway.app). ABreak is an independent project, 
   - this Mac is being remote-controlled (UURemote by default; any host process name is configurable)
   - you are remote-controlling another device (the client app is in front)
   - the microphone or camera is in use (meetings, calls)
-  - video is playing (some app keeps the display awake)
+  - a recognized player reports video playback (Chromium browsers, Safari/WebKit, VLC)
   - an app from your list is in front, or (opt-in) any fullscreen app is in front
 - Idle detection: stepping away pauses the timer; a long absence counts as a break
 - English and Simplified Chinese UI: follows the macOS language by default, switchable under **Settings → General → Language**
@@ -63,6 +63,7 @@ For other tools, add their host process name under **Settings → Smart Pause �
 
 ## Troubleshooting
 
+- Video pause requires an active display-sleep assertion explicitly named for playback. Screen capture (`Capturing`), generic screen wake locks, and continuity activity do not count. Unknown player assertion names are ignored rather than freezing reminders indefinitely; `--probe` prints `displayActivities` to help diagnose unsupported players. Meeting and remote-control detection remain independent.
 - Pause/resume decisions are logged to `~/Library/Logs/ABreak.log` (menu → **Open Log**).
 - **Preview Posture Reminder** in the menu shows the animation immediately.
 - Uninstall: quit ABreak, delete `/Applications/ABreak.app`, and optionally `defaults delete cc.ejj.abreak`.

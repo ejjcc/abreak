@@ -15,12 +15,19 @@ enum Probe {
                 "\($0.pid) \($0.name) tcp=\($0.tcpEstablished) udp=\($0.udpSockets) cpu=\(String(format: "%.1f", $0.cpuPercent))% disp=\($0.holdsDisplayAssertion ? "Y" : "n")"
             }.joined(separator: " | ")
             let mic = MediaDetectors.microphoneUsers().map(ProcessInspector.name(of:))
-            let video = MediaDetectors.displaySleepHolders(ignoring: [], assertions: ProcessInspector.powerAssertions())
+            let assertions = ProcessInspector.powerAssertionDetails()
+            let video = MediaDetectors.videoPlaybackHolders(
+                ignoring: Pref.list(Pref.videoIgnoredProcesses).union(Pref.list(Pref.remoteHostProcesses)),
+                assertions: assertions
+            )
+            let displayActivities = assertions.flatMap { pid, activities in
+                activities.filter(\.preventsDisplaySleep).map { "\(ProcessInspector.name(of: pid)): \($0.name)" }
+            }.sorted()
             let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "-"
             print("""
             \(now.formatted(date: .omitted, time: .standard)) remote=\(on ? "ON " : "off") [\(samples)] \
             mic=\(mic) cam=\(MediaDetectors.isCameraInUse()) video=\(video) front=\(front) \
-            fullscreen=\(MediaDetectors.frontmostIsFullscreen()) idle=\(Int(idleSeconds()))s
+            fullscreen=\(MediaDetectors.frontmostIsFullscreen()) idle=\(Int(idleSeconds()))s displayActivities=\(displayActivities)
             """)
             fflush(stdout)
             Thread.sleep(forTimeInterval: 2)

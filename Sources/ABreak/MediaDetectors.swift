@@ -1,6 +1,7 @@
 import AppKit
 import CoreAudio
 import CoreMediaIO
+import ABreakCore
 
 enum MediaDetectors {
     /// PIDs of processes currently capturing audio input (macOS 14.2+ process objects).
@@ -63,11 +64,11 @@ enum MediaDetectors {
         }
     }
 
-    /// Processes holding a display-sleep assertion, which is what video players do while playing.
-    static func displaySleepHolders(ignoring ignored: Set<String>, assertions: [pid_t: Set<String>]) -> [String] {
+    /// Only explicit, active playback assertions count; capture and generic wake locks do not.
+    static func videoPlaybackHolders(ignoring ignored: Set<String>, assertions: [pid_t: [PowerAssertion]]) -> [String] {
         let me = getpid()
-        return assertions.compactMap { pid, types in
-            guard pid != me, !types.isDisjoint(with: ProcessInspector.displaySleepAssertionTypes) else { return nil }
+        return assertions.compactMap { pid, activities in
+            guard pid != me, activities.contains(where: \.isVideoPlayback) else { return nil }
             let name = ProcessInspector.name(of: pid)
             return ignored.contains(name) ? nil : name
         }

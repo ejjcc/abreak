@@ -106,7 +106,7 @@ struct SettingsView: View {
                 Toggle(tr("Meetings and calls (microphone or camera in use)", "会议和通话（麦克风或摄像头在用）"), isOn: $pauseOnMeeting)
                 TextField(tr("Ignored microphone processes", "忽略的麦克风进程"), text: $micIgnoredProcesses, prompt: Text(tr("Comma separated", "逗号分隔")))
                     .disabled(!pauseOnMeeting)
-                Toggle(tr("Video playback (display sleep is blocked)", "视频播放（有进程阻止显示器休眠）"), isOn: $pauseOnVideo)
+                Toggle(tr("Video playback (recognized players)", "视频播放（已识别的播放器）"), isOn: $pauseOnVideo)
                 TextField(tr("Ignored processes", "忽略的进程"), text: $videoIgnoredProcesses, prompt: Text(tr("Comma separated", "逗号分隔")))
                     .disabled(!pauseOnVideo)
                 Toggle(tr("Fullscreen app in front", "前台应用全屏时"), isOn: $pauseOnFullscreen)

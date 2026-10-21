@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import IOKit.pwr_mgt
+import ABreakCore
 
 /// Thin wrappers over libproc / IOPM. All calls work on same-user processes without extra permissions.
 enum ProcessInspector {
@@ -73,14 +74,26 @@ enum ProcessInspector {
 
     static let displaySleepAssertionTypes: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
 
-    /// pid -> assertion types currently held.
+    /// Active assertion types for remote-host detection.
     static func powerAssertions() -> [pid_t: Set<String>] {
+        powerAssertionDetails().mapValues { Set($0.filter(\.isActive).map(\.type)) }
+    }
+
+    /// Preserve names and levels so capture/keep-awake requests are not treated as playback.
+    static func powerAssertionDetails() -> [pid_t: [PowerAssertion]] {
         var raw: Unmanaged<CFDictionary>?
         guard IOPMCopyAssertionsByProcess(&raw) == kIOReturnSuccess,
               let dict = raw?.takeRetainedValue() as? [NSNumber: [[String: Any]]] else { return [:] }
-        var result: [pid_t: Set<String>] = [:]
+        var result: [pid_t: [PowerAssertion]] = [:]
         for (pid, list) in dict {
-            result[pid.int32Value] = Set(list.compactMap { $0[kIOPMAssertionTypeKey] as? String })
+            result[pid.int32Value] = list.compactMap { item in
+                guard let type = item[kIOPMAssertionTypeKey] as? String else { return nil }
+                return PowerAssertion(
+                    type: type,
+                    name: item[kIOPMAssertionNameKey] as? String ?? "",
+                    isActive: ((item[kIOPMAssertionLevelKey] as? NSNumber)?.intValue ?? 0) == Int(kIOPMAssertionLevelOn)
+                )
+            }
         }
         return result
     }

@@ -16,6 +16,8 @@ Inspired by [LookAway](https://lookaway.app). ABreak is an independent project, 
   - a recognized player reports video playback (Chromium browsers, Safari/WebKit, VLC)
   - an app from your list is in front, or (opt-in) any fullscreen app is in front
 - Idle detection: stepping away pauses the timer; a long absence counts as a break
+- Lock/sleep recovery: time away counts toward an ongoing break. An absence at least as long as the configured long break (3 minutes by default, or the idle-reset threshold if shorter) restarts the work timer and short/long-break cycle. Overlapping lock and sleep events count once.
+- An automatic pause that interrupts a break starts a fresh work interval, so the same break does not pop up again a minute later.
 - English and Simplified Chinese UI: follows the macOS language by default, switchable under **Settings → General → Language**
 - **No permissions required**: no Screen Recording, Accessibility, or Microphone access
 

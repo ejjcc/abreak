@@ -71,7 +71,7 @@ private extension Scheduler {
     #expect(s.completedBreaks == 0)
     s.run(1)
     #expect(!s.isPaused)
-    #expect(s.workRemaining == 19)
+    #expect(s.workRemaining == 99)
 }
 
 @Test func smartPauseFreezesWorkCountdown() {

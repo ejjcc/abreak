@@ -28,7 +28,9 @@ public struct MenuBarLabel: Equatable, Sendable {
         if case .onBreak = s.phase { onBreak = true } else { onBreak = false }
         let remaining = onBreak ? s.breakRemaining : s.workRemaining
 
-        if s.isPaused {
+        if s.isAway {
+            symbol = "lock"
+        } else if s.isPaused {
             symbol = "pause.circle"
         } else if onBreak {
             symbol = "eye.slash"
@@ -42,6 +44,6 @@ public struct MenuBarLabel: Equatable, Sendable {
         case .minutes: text = DurationFormat.compact(remaining)
         case .iconOnly: text = ""
         }
-        dimmed = s.isPaused || s.isIdle
+        dimmed = s.isPaused || s.isIdle || s.isAway
     }
 }

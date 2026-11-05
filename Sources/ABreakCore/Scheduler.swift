@@ -23,6 +23,10 @@ public enum Phase: Equatable, Sendable {
     case onBreak(long: Bool)
 }
 
+public enum AbsenceReason: Hashable, Sendable {
+    case screenLock, sleep, inactiveSession
+}
+
 /// Pure break-timer state machine. The caller drives it with `tick` once per second.
 public struct Scheduler: Sendable {
     public var config: SchedulerConfig {
@@ -34,6 +38,43 @@ public struct Scheduler: Sendable {
     public private(set) var completedBreaks = 0
     public private(set) var pauseReasons: [String] = []
     public private(set) var isIdle = false
+    private var absenceReasons: Set<AbsenceReason> = []
+    private var absentSince: Date?
+    public var isAway: Bool { !absenceReasons.isEmpty }
+
+    /// Lock and sleep often overlap. Credit their combined wall-clock duration only once.
+    /// Returns true when the absence satisfies a break and starts a fresh work interval.
+    @discardableResult
+    public mutating func setAbsent(_ reason: AbsenceReason, _ active: Bool, at now: Date) -> Bool {
+        if active {
+            if absenceReasons.isEmpty { absentSince = now }
+            absenceReasons.insert(reason)
+            return false
+        }
+        guard absenceReasons.remove(reason) != nil, absenceReasons.isEmpty,
+              let started = absentSince else { return false }
+        absentSince = nil
+        let duration = max(0, now.timeIntervalSince(started))
+        let naturalRest = config.longBreakEvery > 0
+            ? min(config.longBreak, config.idleResetAfter) : config.idleResetAfter
+        if duration >= naturalRest {
+            // A full long rest also restarts the short/long-break cycle.
+            completedBreaks = 0
+            resetWork()
+            isIdle = false
+            return true
+        }
+        if case .onBreak = phase {
+            breakRemaining = max(0, breakRemaining - duration)
+            if breakRemaining == 0 {
+                completedBreaks += 1
+                resetWork()
+                isIdle = false
+                return true
+            }
+        }
+        return false
+    }
 
     public init(config: SchedulerConfig = .init()) {
         self.config = config
@@ -50,11 +91,13 @@ public struct Scheduler: Sendable {
         let wasPaused = isPaused
         pauseReasons = reasons
 
+        // Elapsed absence is reconciled at unlock/wake, never by capped UI timer ticks.
+        if isAway { return }
+
         if isPaused {
             // A smart pause (remote session, meeting...) cancels any pending or running break.
             if phase != .working {
-                phase = .working
-                workRemaining = 0
+                resetWork()
             }
             isIdle = false
             return
@@ -89,7 +132,8 @@ public struct Scheduler: Sendable {
 
     /// No-op while paused: a smart pause would cancel the break on the next tick anyway.
     public mutating func startBreak() {
-        guard !isPaused else { return }
+        guard !isPaused, !isAway else { return }
+        if case .onBreak = phase { return }
         let long = nextBreakIsLong
         phase = .onBreak(long: long)
         breakRemaining = long ? config.longBreak : config.shortBreak
@@ -106,6 +150,7 @@ public struct Scheduler: Sendable {
 
     public mutating func resetWork() {
         phase = .working
+        breakRemaining = 0
         workRemaining = config.workInterval
     }
 }

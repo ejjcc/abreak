@@ -1,6 +1,14 @@
 import Foundation
+import CoreGraphics
 
 enum ScreenLock {
+    /// Poll as well as observing notifications: a missed lock event must not leave a stale break.
+    static var isLocked: Bool? {
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return nil }
+        if session["CGSSessionScreenIsLocked"] as? Bool == true { return true }
+        guard session[kCGSessionOnConsoleKey as String] as? Bool == true else { return nil }
+        return false
+    }
     /// Locks the session via login.framework's SACLockScreenImmediate (no public API exists);
     /// falls back to sleeping the display, which locks when "require password immediately" is on.
     static func lock() {

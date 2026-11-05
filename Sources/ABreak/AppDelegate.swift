@@ -15,7 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var settingsWindow: NSWindow?
     private var timer: Timer?
     private var lastTick = Date()
-    private var sleptAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Pref.register()
@@ -37,11 +36,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         let center = NSWorkspace.shared.notificationCenter
         center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.sleptAt = Date() }
+            MainActor.assumeIsolated { self?.setAbsent(.sleep, true) }
         }
         center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.didWake() }
         }
+        center.addObserver(forName: NSWorkspace.sessionDidResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.setAbsent(.inactiveSession, true) }
+        }
+        center.addObserver(forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.syncScreenLock()
+                self?.setAbsent(.inactiveSession, false)
+            }
+        }
+        let distributed = DistributedNotificationCenter.default()
+        for (name, locked) in [("com.apple.screenIsLocked", true), ("com.apple.screenIsUnlocked", false)] {
+            distributed.addObserver(forName: Notification.Name(name), object: nil, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.setAbsent(.screenLock, locked) }
+            }
+        }
+        syncScreenLock()
 
         Log.write("launched")
         render()
@@ -72,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Loop
 
     private func tick() {
+        syncScreenLock()
         let now = Date()
         let dt = min(max(now.timeIntervalSince(lastTick), 0), 5)
         lastTick = now
@@ -88,7 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         transition(from: before)
 
         posture.interval = Pref.bool(Pref.postureEnabled) ? max(5, Pref.double(Pref.postureMinutes)) * 60 : 0
-        let working = scheduler.phase == .working && !scheduler.isPaused && !scheduler.isIdle
+        let working = scheduler.phase == .working && !scheduler.isPaused && !scheduler.isIdle && !scheduler.isAway
         if posture.tick(dt, active: working) {
             postureReminder.show()
             Log.write("posture reminder")
@@ -102,8 +118,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func transition(from before: Scheduler) {
+        if scheduler.isAway {
+            preBreak.hide()
+            overlay.hide(animated: false)
+            postureReminder.hide()
+            render()
+            return
+        }
         if before.phase != scheduler.phase {
-            Log.write("phase: \(before.phase) -> \(scheduler.phase)")
+            Log.write("phase: \(before.phase) -> \(scheduler.phase), work remaining: \(Int(scheduler.workRemaining))s, completed: \(scheduler.completedBreaks)")
+            if case .onBreak = scheduler.phase {
+                posture.reset()
+                postureReminder.hide()
+            }
             if case .onBreak = before.phase, scheduler.phase == .working,
                scheduler.completedBreaks > before.completedBreaks {
                 posture.reset()
@@ -127,11 +154,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func didWake() {
-        lastTick = Date()
-        if let slept = sleptAt, Date().timeIntervalSince(slept) >= scheduler.config.idleResetAfter {
-            act { $0.resetWork() }
+        syncScreenLock()
+        setAbsent(.sleep, false)
+    }
+
+    private func syncScreenLock() {
+        if let locked = ScreenLock.isLocked { setAbsent(.screenLock, locked) }
+    }
+
+    private func setAbsent(_ reason: AbsenceReason, _ active: Bool) {
+        let before = scheduler
+        let now = Date()
+        let rested = scheduler.setAbsent(reason, active, at: now)
+        if before.isAway != scheduler.isAway {
+            lastTick = now
+            Log.write("session away: \(scheduler.isAway), source: \(reason), rested: \(rested)")
+            if rested { posture.reset() }
+            if !scheduler.isAway {
+                // Refresh stale pause reasons before deciding whether to reveal a remaining break.
+                scheduler.tick(0, idle: 0, pauseReasons: monitor.reasons(now: now))
+            }
+            transition(from: before)
         }
-        sleptAt = nil
     }
 
     // MARK: - Menu bar
@@ -179,7 +223,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
 
         let header: String
-        if scheduler.isPaused {
+        if scheduler.isAway {
+            header = tr("Paused while locked or asleep", "锁屏或睡眠期间暂停")
+        } else if scheduler.isPaused {
             header = tr("Paused · break in \(DurationFormat.clock(scheduler.workRemaining))", "已暂停 · \(DurationFormat.clock(scheduler.workRemaining)) 后休息")
         } else if case .onBreak = scheduler.phase {
             header = tr("On break, \(DurationFormat.clock(scheduler.breakRemaining)) left", "休息中，剩余 \(DurationFormat.clock(scheduler.breakRemaining))")
@@ -197,7 +243,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         let breakNow = item(tr("Take a Break Now", "立即休息")) { $0.act { $0.startBreak() } }
-        breakNow.isEnabled = !scheduler.isPaused
+        breakNow.isEnabled = !scheduler.isPaused && !scheduler.isAway
         menu.addItem(breakNow)
         menu.addItem(item(tr("Restart Timer", "重新计时")) { $0.act { $0.resetWork() } })
 
